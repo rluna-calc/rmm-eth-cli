@@ -94,22 +94,6 @@ func getLocalIP() (string, error) {
 	return localAddr.IP.String(), nil
 }
 
-func Send(buf []byte, ip string, port int) {
-	addr := fmt.Sprintf("%s:%d", ip, port)
-	conn, err := net.Dial("udp", addr)
-	if err != nil {
-		log.Printf("Error sending packet: %v", err)
-		return
-	}
-	defer conn.Close()
-
-	_, err = conn.Write(buf)
-	if err != nil {
-		log.Printf("Error sending packet: %v", err)
-	}
-	log.Printf("Sent: %d bytes to %s:%d", len(buf), ip, port)
-}
-
 type Rmm struct {
 	txIP         string
 	files        []FileType
