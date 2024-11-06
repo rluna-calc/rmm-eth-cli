@@ -24,65 +24,6 @@ type FileType struct {
 	Created    string
 }
 
-type Receiver struct {
-	port           int
-	stopListening  bool
-	isRunning      bool
-	messageChannel chan []byte
-}
-
-func NewReceiver(port int, messageChannel chan []byte) *Receiver {
-	return &Receiver{
-		port:           port,
-		messageChannel: messageChannel,
-	}
-}
-
-func (r *Receiver) Start() {
-	go r.listen()
-}
-
-func (r *Receiver) Stop() {
-	r.stopListening = true
-}
-
-func (r *Receiver) listen() {
-	addr := fmt.Sprintf(":%d", r.port)
-	conn, err := net.ListenPacket("udp", addr)
-	if err != nil {
-		log.Fatalf("Error listening on port %d: %v", r.port, err)
-		return
-	}
-	defer conn.Close()
-
-	log.Printf("Listening for UDP packets on port %d...", r.port)
-
-	for !r.stopListening {
-		buffer := make([]byte, BUFFER_SIZE)
-		_, addr, err := conn.ReadFrom(buffer)
-		if err != nil {
-			if r.stopListening {
-				return
-			}
-			continue
-		}
-
-		// Filter out packets from self or too small to be valid
-		localIP, err := getLocalIP()
-		if err == nil && addr.(*net.UDPAddr).IP.String() == localIP {
-			continue
-		}
-
-		if len(buffer) < 20 {
-			continue
-		}
-
-		log.Printf("Received message: %d bytes from %s", len(buffer), addr.String())
-		r.messageChannel <- buffer
-	}
-	r.isRunning = false
-}
-
 func getLocalIP() (string, error) {
 	conn, err := net.Dial("udp", "8.8.8.8:80")
 	if err != nil {

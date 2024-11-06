@@ -6,13 +6,16 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 func main() {
 	// Define command line arguments
 	tx := flag.Bool("tx", false, "Set mode to transmit")
+	// rx := flag.Bool("rx", false, "Set mode to receive")
 	ip := flag.String("ip", "", "Destination IP address")
-	port := flag.Int("port", -1, "Rx or Tx port")
+	port := flag.Int("port", 12345, "Rx or Tx port")
 	message := flag.String("message", "Hello UDP!", "Message to send")
 	hex := flag.Bool("hex", false, "Interpret message as a hexadecimal string")
 	verboseFlag := flag.Bool("verbose", false, "Print verbose output")
@@ -26,16 +29,7 @@ func main() {
 	}
 
 	// If message should be in hex, convert it
-	var txBuf []byte
-	if *hex {
-		var err error
-		txBuf, err = hexToBytes(*message)
-		if err != nil {
-			log.Fatalf("Invalid hex message: %v", err)
-		}
-	} else {
-		txBuf = []byte(*message)
-	}
+	var txBuf []byte = checkHex(*message, *hex)
 
 	// Send the message if transmitting mode is set
 	if *tx && *ip != "" && *port != 0 {
@@ -43,18 +37,50 @@ func main() {
 		udp.Send(txBuf, *ip, *port)
 		os.Exit(0)
 	}
+
+	var rxChan = make(chan []byte, 20)
+	log.Printf("Starting receiver on port %d", *port)
+	var receiver = udp.NewReceiver(*port, rxChan)
+	receiver.Start()
+
+	// Set up a channel to listen for interrupt signals (e.g., Ctrl+C)
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM) // Catch SIGINT (Ctrl+C) and SIGTERM
+
+	// Main loop to process received messages
+	for {
+		select {
+		case msg, ok := <-rxChan:
+			if !ok {
+				// Channel is closed and drained
+				log.Println("All messages processed. Exiting...")
+				return
+			}
+			// Process received message
+			log.Printf("Main thread received: %s", msg)
+
+		case sig := <-sigChan:
+			// Handle interrupt signal
+			log.Printf("Received signal: %v. Exiting...", sig)
+			return
+		}
+	}
 }
 
-// func init() {
-// 	// Set up signal handling
-// 	c := make(chan os.Signal, 1)
-// 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
-// 	go func() {
-// 		for sig := range c {
-// 			signalHandler(sig)
-// 		}
-// 	}()
-// }
+func checkHex(message string, isHex bool) []byte {
+	var txBuf []byte
+	if isHex {
+		var err error
+		txBuf, err = hexToBytes(message)
+		if err != nil {
+			log.Fatalf("Invalid hex message: %v", err)
+		}
+	} else {
+		txBuf = []byte(message)
+	}
+
+	return txBuf
+}
 
 // hexToBytes converts a hex string to a byte slice
 func hexToBytes(s string) ([]byte, error) {
