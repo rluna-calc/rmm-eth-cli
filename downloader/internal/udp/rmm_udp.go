@@ -1,6 +1,8 @@
 package udp
 
 import (
+	"bytes"
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"log"
@@ -152,13 +154,17 @@ func (r *Rmm) readContentsFromRMM() []FileType {
 	var files []FileType
 	stop := false
 	requestVal := 1
+	oldVal := requestVal
 
 	for !stop {
-		requestVal, newFiles := r.requestContentBlock(requestVal)
+		logrus.Debug(requestVal)
+		logrus.Debug(oldVal)
+		requestVal, newFiles := r.requestContentBlock(oldVal)
 		if requestVal == 0xFF {
 			stop = true
 		}
 		files = append(files, newFiles...)
+		oldVal = requestVal
 	}
 
 	return files
@@ -185,13 +191,15 @@ func (r *Rmm) parseContentBlock(resp []byte) []FileType {
 	var files []FileType
 
 	fileInfoBlocks := split(resp, []byte("File"))
-	for _, block := range fileInfoBlocks[1:] {
+	for i, block := range fileInfoBlocks[1:] {
+		logrus.Debugf("Block %d\n%s", i, hex.EncodeToString(block))
 		// Parse block data to extract file info
+		nullIndex := bytes.IndexByte(block, 0x00)
 		file := FileType{
-			Name:       string(block[:32]),
-			StartBlock: uint64(block[52]),
-			BlockCount: uint64(block[60]),
-			Size:       uint64(block[68]),
+			Name:       string(block[:nullIndex]),
+			StartBlock: binary.BigEndian.Uint64(block[52 : 52+8]),
+			BlockCount: binary.BigEndian.Uint64(block[60 : 60+8]),
+			Size:       binary.BigEndian.Uint64(block[68 : 68+8]),
 			Created:    string(block[76:92]),
 		}
 		files = append(files, file)
