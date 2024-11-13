@@ -6,6 +6,8 @@ import (
 	"log"
 	"net"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -108,8 +110,8 @@ func (r *Rmm) parseIdentityResponse(resp []byte) bool {
 	serialNumber := string(resp[20:40])
 	modelNumber := string(resp[54:94])
 
-	log.Printf("SerialNumber: %s", serialNumber)
-	log.Printf("ModelNumber: %s", modelNumber)
+	logrus.Infof("SerialNumber: %s", serialNumber)
+	logrus.Infof("ModelNumber: %s", modelNumber)
 
 	return serialNumber != "" && modelNumber != ""
 }
@@ -122,7 +124,7 @@ func (r *Rmm) PrintFiles() {
 }
 
 func (r *Rmm) Download(filename, dest string) {
-	r.readContents()
+	r.ReadContents()
 
 	// Find the file in the list
 	var file FileType
@@ -142,7 +144,7 @@ func (r *Rmm) Download(filename, dest string) {
 	// Implement actual download logic here
 }
 
-func (r *Rmm) readContents() {
+func (r *Rmm) ReadContents() {
 	r.files = r.readContentsFromRMM()
 }
 

@@ -2,8 +2,9 @@ package udp
 
 import (
 	"fmt"
-	"log"
 	"net"
+
+	"github.com/sirupsen/logrus"
 )
 
 func Send(buf []byte, ip string, port int) {
@@ -16,18 +17,18 @@ func Send(buf []byte, ip string, port int) {
 	// Dial the UDP connection
 	conn, err := net.DialUDP("udp", nil, udpAddress)
 	if err != nil {
-		log.Fatalf("Error creating UDP connection: %v", err)
+		logrus.Fatalf("Error creating UDP connection: %v", err)
 	}
 	defer conn.Close()
 
 	// Send the UDP packet
 	_, err = conn.Write(buf)
 	if err != nil {
-		log.Fatalf("Error sending UDP message: %v", err)
+		logrus.Fatalf("Error sending UDP message: %v", err)
 	}
 
 	// Log the sent message length
-	log.Printf("Sent: %d bytes to %s:%d", len(buf), ip, port)
+	logrus.Debugf("Sent: %d bytes to %s:%d", len(buf), ip, port)
 }
 
 type Receiver struct {
@@ -56,12 +57,12 @@ func (r *Receiver) listen() {
 	addr := fmt.Sprintf(":%d", r.port)
 	conn, err := net.ListenPacket("udp", addr)
 	if err != nil {
-		log.Fatalf("Error listening on port %d: %v", r.port, err)
+		logrus.Fatalf("Error listening on port %d: %v", r.port, err)
 		return
 	}
 	defer conn.Close()
 
-	log.Printf("Listening for UDP packets on port %d...", r.port)
+	logrus.Debugf("Listening for UDP packets on port %d...", r.port)
 
 	for !r.stopListening {
 		buffer := make([]byte, BUFFER_SIZE)
@@ -83,7 +84,7 @@ func (r *Receiver) listen() {
 			continue
 		}
 
-		log.Printf("Received message: %d bytes from %s", num_bytes, addr.String())
+		logrus.Debugf("Received message: %d bytes from %s", num_bytes, addr.String())
 		r.messageChannel <- buffer[:num_bytes]
 	}
 	r.isRunning = false

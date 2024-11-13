@@ -3,10 +3,14 @@ package main
 import (
 	"downloader/internal/udp"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
+
+	"github.com/sirupsen/logrus"
 )
 
 func signalHandler(sig os.Signal) {
@@ -18,9 +22,24 @@ func signalHandler(sig os.Signal) {
 	os.Exit(0)
 }
 
+// CustomFormatter formats log entries to match the desired format
+type CustomFormatter struct{}
+
+// Format formats the log entry
+func (f *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
+	// Format timestamp
+	timestamp := entry.Time.Format("15:04:05.000000")
+
+	// Format log level (convert to lowercase)
+	level := strings.ToUpper(entry.Level.String())
+
+	// Format the log message
+	logMessage := fmt.Sprintf("%s - %s - %s\n", timestamp, level, entry.Message)
+	return []byte(logMessage), nil
+}
 func main() {
 	// Define command line arguments
-	// list := flag.Bool("list", false, "List files on RMM")
+	list := flag.Bool("list", false, "List files on RMM")
 	// fileFlag := flag.String("file", "", "The URL of the file to download.")
 	// allFlag := flag.Bool("all", false, "Download all files on the RMM")
 	// destFlag := flag.String("dest", "", "The local path to save the downloaded file.")
@@ -30,12 +49,15 @@ func main() {
 	flag.Parse()
 
 	// Set logging level
-	logLevel := log.New(os.Stdout, "", log.LstdFlags)
+	logrus.SetFormatter(&CustomFormatter{})
+
 	if *verboseFlag {
-		logLevel.SetFlags(log.LstdFlags | log.Lshortfile) // Show file names and line numbers for debugging
+		logrus.SetLevel(logrus.DebugLevel)
+	} else {
+		logrus.SetLevel(logrus.InfoLevel)
 	}
 
-	logLevel.Println("Starting UDP RMM")
+	logrus.Debug("Starting UDP RMM")
 
 	// rmm := &Rmm{}
 	// globalRmm = rmm // For stopping rx threads
@@ -43,22 +65,16 @@ func main() {
 	rmm := udp.NewRmm()
 	rmm.Start()
 
-	// rmm.SendJumboZeros()
-	// rmm.GetIdentity()
-
-	// logLevel.Println("Download files or other logic here")
-
-	// rmm.Stop()
-
 	// Search for RMM
 	rmmFound := rmm.Search()
 	if !rmmFound {
 		log.Fatal("RMM was not found")
 	}
 
-	// if *listFlag {
-	// 	rmm.readContents()
-	// 	rmm.printFiles()
+	if *list {
+		rmm.ReadContents()
+		rmm.PrintFiles()
+	}
 
 	// } else if *allFlag && *destFlag != "" {
 	// 	rmm.readContents()
