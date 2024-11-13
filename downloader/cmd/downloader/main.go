@@ -3,61 +3,11 @@ package main
 import (
 	"downloader/internal/udp"
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 )
-
-// Placeholder for the Rmm struct and its methods, adapt this to your actual implementation
-// type Rmm struct {
-// 	files []File
-// }
-
-// // A struct to represent the file details (you will need to adapt this)
-// type File struct {
-// 	name string
-// }
-
-// func (r *Rmm) waitForReady() {
-// 	// Implementation of waitForReady method
-// }
-
-// func (r *Rmm) search() bool {
-// 	// Return true if RMM was found
-// 	return true
-// }
-
-// func (r *Rmm) readContents() {
-// 	// Simulate reading contents
-// }
-
-// // func (r *Rmm) printFiles() {
-// // 	for _, file := range r.files {
-// // 		fmt.Println(file.name)
-// // 	}
-// // }
-
-// func (r *Rmm) download(fileName, dest string) {
-// 	// Simulate file download
-// 	fmt.Printf("Downloading %s to %s...\n", fileName, dest)
-// }
-
-// func (r *Rmm) tasksPending() bool {
-// 	// Simulate checking for pending tasks (returning false for this example)
-// 	return false
-// }
-
-// func (r *Rmm) stopAll() {
-// 	// Stop all tasks or threads
-// }
-
-// func (r *Rmm) waitForThreads() {
-// 	// Wait for threads to finish
-// }
-
-// var globalRmm *udp.Rmm
 
 func signalHandler(sig os.Signal) {
 	log.Println("Caught Ctrl+C! Exiting gracefully...")
@@ -70,7 +20,7 @@ func signalHandler(sig os.Signal) {
 
 func main() {
 	// Define command line arguments
-	// listFlag := flag.Bool("list", false, "List files on RMM")
+	// list := flag.Bool("list", false, "List files on RMM")
 	// fileFlag := flag.String("file", "", "The URL of the file to download.")
 	// allFlag := flag.Bool("all", false, "Download all files on the RMM")
 	// destFlag := flag.String("dest", "", "The local path to save the downloaded file.")
@@ -91,20 +41,20 @@ func main() {
 	// globalRmm = rmm // For stopping rx threads
 	// rmm.waitForReady()
 	rmm := udp.NewRmm()
-	// rmm.Start()
+	rmm.Start()
 
 	// rmm.SendJumboZeros()
 	// rmm.GetIdentity()
 
-	fmt.Println("Download files or other logic here")
+	// logLevel.Println("Download files or other logic here")
 
-	rmm.Stop()
+	// rmm.Stop()
 
-	// // Search for RMM
-	// rmmFound := rmm.search()
-	// if !rmmFound {
-	// 	log.Fatal("RMM was not found")
-	// }
+	// Search for RMM
+	rmmFound := rmm.Search()
+	if !rmmFound {
+		log.Fatal("RMM was not found")
+	}
 
 	// if *listFlag {
 	// 	rmm.readContents()

@@ -83,6 +83,11 @@ func (r *Rmm) GetIdentity() bool {
 	return r.parseIdentityResponse(resp)
 }
 
+func (r *Rmm) Search() bool {
+	r.SendJumboZeros()
+	return r.GetIdentity()
+}
+
 func (r *Rmm) flushRxQueue() {
 	for len(r.messageQueue) > 0 {
 		<-r.messageQueue
@@ -205,17 +210,3 @@ func split(s, sep []byte) [][]byte {
 	result = append(result, s[n:])
 	return result
 }
-
-// func main() {
-// 	rmm := NewRmm()
-// 	rmm.Start()
-
-// 	rmm.SendJumboZeros()
-// 	rmm.GetIdentity()
-
-// 	// Simulating the main loop, e.g., downloading files
-// 	rmm.Download("file1", "dest.txt")
-
-// 	// Clean up after done
-// 	rmm.Stop()
-// }
