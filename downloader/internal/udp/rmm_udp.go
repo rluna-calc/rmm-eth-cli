@@ -9,6 +9,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/sirupsen/logrus"
 )
 
@@ -118,11 +119,55 @@ func (r *Rmm) parseIdentityResponse(resp []byte) bool {
 	return serialNumber != "" && modelNumber != ""
 }
 
-func (r *Rmm) PrintFiles() {
-	log.Println("Files on RMM:")
-	for _, f := range r.files {
-		log.Printf("%-12s %-15d %-15d %-18d %-20s", f.Name, f.StartBlock, f.BlockCount, f.Size, f.Created)
+func datetimeStrToObj(dtstr string) (time.Time, error) {
+	// Check if the input string has the expected length
+	if len(dtstr) < 16 {
+		return time.Time{}, fmt.Errorf("invalid timestamp string length")
 	}
+
+	// Extracting components from the string
+	day := dtstr[0:2]
+	month := dtstr[2:4]
+	year := dtstr[4:8]
+	hour := dtstr[8:10]
+	minute := dtstr[10:12]
+	second := dtstr[12:14]
+
+	// Parsing the string into a time.Time object using `time.Parse`
+	// Construct the datetime string in a standard layout for parsing
+	datetimeStr := fmt.Sprintf("%s-%s-%sT%s:%s:%sZ", year, month, day, hour, minute, second)
+	t, err := time.Parse("2006-01-02T15:04:05Z", datetimeStr)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	// Return the parsed time in UTC
+	return t.UTC(), nil
+}
+
+func (r *Rmm) PrintFiles() {
+	strout := "Files on RMM:\n\n"
+	strout += fmt.Sprintf("%-12s %15s %15s %18s %20s\n", "Filename", "StartBlock", "BlockCount", "Size", "Created")
+
+	for _, f := range r.files {
+		createdTime, err := datetimeStrToObj(f.Created)
+		if err != nil {
+			log.Println("Error parsing date:", err)
+			continue
+		}
+		createdStr := createdTime.Format("01/02/2006 15:04:05")
+
+		strout += fmt.Sprintf(
+			" %-12s %15s %15s %18s %20s\n",
+			f.Name,
+			humanize.Comma(int64(f.StartBlock)),
+			humanize.Comma(int64(f.BlockCount)),
+			humanize.Comma(int64(f.Size)),
+			createdStr,
+		)
+	}
+
+	logrus.Infof(strout)
 }
 
 func (r *Rmm) Download(filename, dest string) {
@@ -196,7 +241,7 @@ func (r *Rmm) parseContentBlock(resp []byte) []FileType {
 		// Parse block data to extract file info
 		nullIndex := bytes.IndexByte(block, 0x00)
 		file := FileType{
-			Name:       string(block[:nullIndex]),
+			Name:       "File" + string(block[:nullIndex]),
 			StartBlock: binary.BigEndian.Uint64(block[52 : 52+8]),
 			BlockCount: binary.BigEndian.Uint64(block[60 : 60+8]),
 			Size:       binary.BigEndian.Uint64(block[68 : 68+8]),
