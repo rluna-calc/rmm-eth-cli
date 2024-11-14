@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"sync"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 // FileType struct equivalent to namedtuple in Python
@@ -43,7 +44,6 @@ type DownloadTracker struct {
 	BlockCount     uint64
 	RxSegs         [][]byte
 	RxSize         uint64
-	mutex          sync.Mutex
 }
 
 // Initialize the download tracker
@@ -108,8 +108,8 @@ func (d *DownloadTracker) GetBlock(blockNum uint64) {
 
 // Processes a received segment
 func (d *DownloadTracker) ProcessSegment(seg []byte) bool {
-	reportedLen := int(seg[3])<<8 | int(seg[2])
-	if len(seg)-PAYLOAD_START == reportedLen {
+	reportedLen := uint64(uint64(seg[3]))<<8 | uint64(seg[2])
+	if uint64(len(seg)-PAYLOAD_START) == reportedLen {
 		d.BytesReceived += reportedLen
 		d.RxSize += reportedLen
 		d.RxSegs = append(d.RxSegs, seg)
@@ -129,14 +129,16 @@ func (d *DownloadTracker) ProcessSegment(seg []byte) bool {
 
 // Performs the download loop
 func (d *DownloadTracker) DoDownload() {
-	log.Println("Starting file download")
+	logrus.Infof("Starting file download")
 	d.IsStopped = false
 	isFinished := false
 	numRetries := 0
-	bytesPrev := 0
+	bytesPrev := uint64(0)
 	timePrev := time.Now()
 
 	startTime := time.Now()
+
+outerForLoop:
 	for !d.StopFlag && !isFinished {
 		d.ResetSegments()
 		d.FlushRxQueue()
@@ -144,24 +146,25 @@ func (d *DownloadTracker) DoDownload() {
 
 		d.GetBlock(d.BlockCount)
 
+	innerForLoop:
 		for i := 0; i < NUM_SEGMENTS; i++ {
 			select {
 			case segment := <-d.RxQueue:
 				okBlockIncrement = d.ProcessSegment(segment)
 				if okBlockIncrement {
-					break
+					break innerForLoop
 				}
 			case <-time.After(100 * time.Millisecond):
 				log.Printf("Rx queue empty on segment %d. Retrying block %d", i, d.CurrentBlock)
 				numRetries++
-				break
+				break innerForLoop
 			}
 		}
 
 		if okBlockIncrement {
 			if d.BytesReceived >= d.FileDesc.Size {
 				isFinished = true
-				break
+				break outerForLoop
 			} else {
 				d.BlockCount += (1 << 8)
 				d.CurrentBlock += (1 << 8)
@@ -179,7 +182,7 @@ func (d *DownloadTracker) DoDownload() {
 }
 
 // Reporting function to log download progress
-func (d *DownloadTracker) DoReporting(startTime, lastTime time.Time, bytesPrev, numRetries int) (int, time.Time, bool) {
+func (d *DownloadTracker) DoReporting(startTime, lastTime time.Time, bytesPrev uint64, numRetries int) (uint64, time.Time, bool) {
 	timeNow := time.Now()
 	bytesNow := d.BlockCount * BLOCK_BYTES
 	rate := float64(bytesNow-bytesPrev) / timeNow.Sub(lastTime).Seconds()
@@ -219,7 +222,7 @@ func (d *DownloadTracker) WriteFile() {
 	createdSecs := d.FileDesc.Created[:len(d.FileDesc.Created)-6]
 	createdMicrosecs := d.FileDesc.Created[len(d.FileDesc.Created)-6:]
 	filename := fmt.Sprintf("%s/%s_%s_%s.ch10", d.DestPath, d.FileDesc.Name, createdSecs, createdMicrosecs)
-	log.Printf("Ready to write file: %s", filename)
+	logrus.Infof("Ready to write file: %s", filename)
 
 	d.IsFileReady = true
 
@@ -248,12 +251,12 @@ func (d *DownloadTracker) WriteFile() {
 			}
 			file.Sync()
 		case <-time.After(100 * time.Millisecond):
-			log.Println("write_queue empty")
+			logrus.Warnf("write_queue empty")
 		}
 	}
 
-	log.Printf("%d bytes written to file", d.BytesWritten)
-	log.Printf("File: %s", filename)
+	logrus.Infof("%d bytes written to file", d.BytesWritten)
+	logrus.Infof("File: %s", filename)
 }
 
 // Formats remaining time as a string

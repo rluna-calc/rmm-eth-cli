@@ -33,22 +33,23 @@ func getLocalIP() (string, error) {
 }
 
 type Rmm struct {
-	txIP         string
-	files        []FileType
-	receivers    []*Receiver
-	messageQueue chan []byte
+	txIP      string
+	files     []FileType
+	receivers []*Receiver
+	rxQueue   chan []byte
+	dlt       *DownloadTracker
 }
 
 func NewRmm() *Rmm {
-	messageQueue := make(chan []byte, 100)
+	rxQueue := make(chan []byte, 100)
 	rmm := &Rmm{
-		txIP:         "192.168.0.255",
-		messageQueue: messageQueue,
+		txIP:    "192.168.0.255",
+		rxQueue: rxQueue,
 	}
 
 	// Initialize receivers for ports 252 and broadcast
-	rmm.receivers = append(rmm.receivers, NewReceiver(PORT_252, messageQueue))
-	rmm.receivers = append(rmm.receivers, NewReceiver(PORT_BROADCAST, messageQueue))
+	rmm.receivers = append(rmm.receivers, NewReceiver(PORT_252, rxQueue))
+	rmm.receivers = append(rmm.receivers, NewReceiver(PORT_BROADCAST, rxQueue))
 
 	return rmm
 }
@@ -86,14 +87,14 @@ func (r *Rmm) Search() bool {
 }
 
 func (r *Rmm) flushRxQueue() {
-	for len(r.messageQueue) > 0 {
-		<-r.messageQueue
+	for len(r.rxQueue) > 0 {
+		<-r.rxQueue
 	}
 }
 
 func (r *Rmm) waitForRx() []byte {
 	select {
-	case msg := <-r.messageQueue:
+	case msg := <-r.rxQueue:
 		return msg
 	case <-time.After(time.Second):
 		log.Println("Timeout waiting for response")
@@ -175,12 +176,22 @@ func (r *Rmm) Download(filename, dest string) {
 	}
 
 	if file.Name == "" {
-		log.Printf("File %s not found on RMM", filename)
+		logrus.Warnf("File %s not found on RMM", filename)
 		return
 	}
 
-	log.Printf("Downloading file: %s", file.Name)
-	// Implement actual download logic here
+	logrus.Infof("Downloading file: %s", file.Name)
+	r.dlt = NewDownloadTracker(file, dest, r.rxQueue, r.requestBlock)
+	r.dlt.Start()
+
+	// Wait for download to start
+	for r.dlt.GetIsStopped() {
+		time.Sleep(100 * time.Millisecond)
+	}
+}
+
+func (r *Rmm) requestBlock(blockNum uint64) {
+	// Define behavior for requesting a block
 }
 
 func (r *Rmm) ReadContents() {
