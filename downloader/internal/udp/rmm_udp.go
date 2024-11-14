@@ -21,14 +21,6 @@ const (
 	BUFFER_SIZE    = 9000
 )
 
-type FileType struct {
-	Name       string
-	StartBlock uint64
-	BlockCount uint64
-	Size       uint64
-	Created    string
-}
-
 func getLocalIP() (string, error) {
 	conn, err := net.Dial("udp", "8.8.8.8:80")
 	if err != nil {

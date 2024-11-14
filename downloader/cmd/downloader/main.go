@@ -40,9 +40,9 @@ func (f *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 func main() {
 	// Define command line arguments
 	list := flag.Bool("list", false, "List files on RMM")
-	// fileFlag := flag.String("file", "", "The URL of the file to download.")
+	file := flag.String("file", "", "The URL of the file to download.")
 	// allFlag := flag.Bool("all", false, "Download all files on the RMM")
-	// destFlag := flag.String("dest", "", "The local path to save the downloaded file.")
+	dest := flag.String("dest", "", "The local path to save the downloaded file.")
 	// ignoreFlag := flag.String("ignore", "", "A list file numbers to ignore")
 	verboseFlag := flag.Bool("verbose", false, "Print verbose output")
 
@@ -74,59 +74,58 @@ func main() {
 	if *list {
 		rmm.ReadContents()
 		rmm.PrintFiles()
+
+		// } else if *allFlag && *destFlag != "" {
+		// 	rmm.readContents()
+		// 	rmm.printFiles()
+
+		// 	// Convert the ignore list into an array of integers
+		// 	var ignoreList []int
+		// 	if *ignoreFlag != "" {
+		// 		for _, numStr := range strings.Split(*ignoreFlag, ",") {
+		// 			num, err := strconv.Atoi(numStr)
+		// 			if err == nil {
+		// 				ignoreList = append(ignoreList, num)
+		// 			}
+		// 		}
+		// 	}
+
+		// 	logLevel.Printf("Starting download of all files to: %s\n", *destFlag)
+		// 	logLevel.Printf("Ignoring files: %v\n", ignoreList)
+
+		// 	for _, file := range rmm.files {
+		// 		fileNum, err := strconv.Atoi(file.name[strings.LastIndex(file.name, "File")+4:])
+		// 		if err != nil {
+		// 			continue
+		// 		}
+		// 		// Skip ignored files
+		// 		shouldExclude := false
+		// 		for _, ignored := range ignoreList {
+		// 			if fileNum == ignored {
+		// 				shouldExclude = true
+		// 				break
+		// 			}
+		// 		}
+		// 		if shouldExclude {
+		// 			continue
+		// 		}
+
+		// 		logLevel.Printf("Downloading file %s\n", file.name)
+		// 		rmm.download(file.name, *destFlag)
+
+		// 		// Wait for download to finish
+		// 		for rmm.tasksPending() {
+		// 			time.Sleep(200 * time.Millisecond)
+		// 		}
+		// 	}
+
+		// 	logLevel.Printf("Downloaded %d files to %s\n", len(rmm.files), *destFlag)
+
+	} else if *file != "" && *dest != "" {
+		rmm.Download(*file, *dest)
+	} else {
+		log.Fatal("Invalid arguments")
 	}
-
-	// } else if *allFlag && *destFlag != "" {
-	// 	rmm.readContents()
-	// 	rmm.printFiles()
-
-	// 	// Convert the ignore list into an array of integers
-	// 	var ignoreList []int
-	// 	if *ignoreFlag != "" {
-	// 		for _, numStr := range strings.Split(*ignoreFlag, ",") {
-	// 			num, err := strconv.Atoi(numStr)
-	// 			if err == nil {
-	// 				ignoreList = append(ignoreList, num)
-	// 			}
-	// 		}
-	// 	}
-
-	// 	logLevel.Printf("Starting download of all files to: %s\n", *destFlag)
-	// 	logLevel.Printf("Ignoring files: %v\n", ignoreList)
-
-	// 	for _, file := range rmm.files {
-	// 		fileNum, err := strconv.Atoi(file.name[strings.LastIndex(file.name, "File")+4:])
-	// 		if err != nil {
-	// 			continue
-	// 		}
-	// 		// Skip ignored files
-	// 		shouldExclude := false
-	// 		for _, ignored := range ignoreList {
-	// 			if fileNum == ignored {
-	// 				shouldExclude = true
-	// 				break
-	// 			}
-	// 		}
-	// 		if shouldExclude {
-	// 			continue
-	// 		}
-
-	// 		logLevel.Printf("Downloading file %s\n", file.name)
-	// 		rmm.download(file.name, *destFlag)
-
-	// 		// Wait for download to finish
-	// 		for rmm.tasksPending() {
-	// 			time.Sleep(200 * time.Millisecond)
-	// 		}
-	// 	}
-
-	// 	logLevel.Printf("Downloaded %d files to %s\n", len(rmm.files), *destFlag)
-
-	// } else if *fileFlag != "" && *destFlag != "" {
-	// 	rmm.download(*fileFlag, *destFlag)
-	// } else {
-	// 	log.Fatal("Invalid arguments")
-	// }
 
 	// // Wait for tasks to end
 	// for rmm.tasksPending() {

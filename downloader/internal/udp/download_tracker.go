@@ -1,0 +1,268 @@
+package udp
+
+import (
+	"fmt"
+	"log"
+	"os"
+	"sync"
+	"time"
+)
+
+// FileType struct equivalent to namedtuple in Python
+type FileType struct {
+	Name       string
+	StartBlock uint64
+	BlockCount uint64
+	Size       uint64
+	Created    string
+}
+
+// Constants
+const (
+	REPORT_COUNT  = 1000
+	PAYLOAD_START = 10
+	BLOCK_BYTES   = 512
+	RX_BLOCKS     = 16
+	RX_BYTES      = BLOCK_BYTES * RX_BLOCKS
+	NUM_SEGMENTS  = 16
+	RX_SEQ_LEN    = RX_BYTES * NUM_SEGMENTS
+)
+
+type DownloadTracker struct {
+	FileDesc       FileType
+	DestPath       string
+	RxQueue        chan []byte
+	RequestBlockCb func(uint64)
+	StopFlag       bool
+	IsStopped      bool
+	IsFileReady    bool
+	FileWriteQueue chan [][]byte
+	BytesWritten   uint64
+	BytesReceived  uint64
+	CurrentBlock   uint64
+	BlockCount     uint64
+	RxSegs         [][]byte
+	RxSize         uint64
+	mutex          sync.Mutex
+}
+
+// Initialize the download tracker
+func NewDownloadTracker(fileDesc FileType, destPath string, rxQueue chan []byte, requestBlockCb func(uint64)) *DownloadTracker {
+	dlt := &DownloadTracker{
+		FileDesc:       fileDesc,
+		DestPath:       destPath,
+		RxQueue:        rxQueue,
+		RequestBlockCb: requestBlockCb,
+		FileWriteQueue: make(chan [][]byte, 10), // Adjust buffer size as needed
+		StopFlag:       false,
+		IsStopped:      true,
+		IsFileReady:    false,
+	}
+
+	dlt.Init()
+	return dlt
+}
+
+func (d *DownloadTracker) Init() {
+	d.CurrentBlock = d.FileDesc.StartBlock
+	d.BlockCount = 0
+	d.BytesWritten = 0
+	d.BytesReceived = 0
+	d.ResetSegments()
+}
+
+// Resets segment data
+func (d *DownloadTracker) ResetSegments() {
+	d.RxSegs = make([][]byte, 0)
+	d.RxSize = 0
+}
+
+// Starts the download and writing processes
+func (d *DownloadTracker) Start() {
+	go d.WriteFile()
+	d.WaitForFileReady()
+	go d.DoDownload()
+}
+
+// Waits until the file is ready to write
+func (d *DownloadTracker) WaitForFileReady() {
+	for !d.IsFileReady {
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+// Stops the download process
+func (d *DownloadTracker) Stop() {
+	d.StopFlag = true
+}
+
+func (d *DownloadTracker) GetIsStopped() bool {
+	return d.IsStopped
+}
+
+// Requests a block by invoking the callback
+func (d *DownloadTracker) GetBlock(blockNum uint64) {
+	readBlock := d.FileDesc.StartBlock + blockNum
+	d.RequestBlockCb(readBlock)
+}
+
+// Processes a received segment
+func (d *DownloadTracker) ProcessSegment(seg []byte) bool {
+	reportedLen := int(seg[3])<<8 | int(seg[2])
+	if len(seg)-PAYLOAD_START == reportedLen {
+		d.BytesReceived += reportedLen
+		d.RxSize += reportedLen
+		d.RxSegs = append(d.RxSegs, seg)
+	}
+
+	okToIncrement := d.RxSize == RX_SEQ_LEN
+	if okToIncrement {
+		if len(d.FileWriteQueue) < cap(d.FileWriteQueue) {
+			d.FileWriteQueue <- d.RxSegs
+		} else {
+			log.Println("File write queue is full")
+		}
+	}
+
+	return okToIncrement
+}
+
+// Performs the download loop
+func (d *DownloadTracker) DoDownload() {
+	log.Println("Starting file download")
+	d.IsStopped = false
+	isFinished := false
+	numRetries := 0
+	bytesPrev := 0
+	timePrev := time.Now()
+
+	startTime := time.Now()
+	for !d.StopFlag && !isFinished {
+		d.ResetSegments()
+		d.FlushRxQueue()
+		okBlockIncrement := false
+
+		d.GetBlock(d.BlockCount)
+
+		for i := 0; i < NUM_SEGMENTS; i++ {
+			select {
+			case segment := <-d.RxQueue:
+				okBlockIncrement = d.ProcessSegment(segment)
+				if okBlockIncrement {
+					break
+				}
+			case <-time.After(100 * time.Millisecond):
+				log.Printf("Rx queue empty on segment %d. Retrying block %d", i, d.CurrentBlock)
+				numRetries++
+				break
+			}
+		}
+
+		if okBlockIncrement {
+			if d.BytesReceived >= d.FileDesc.Size {
+				isFinished = true
+				break
+			} else {
+				d.BlockCount += (1 << 8)
+				d.CurrentBlock += (1 << 8)
+			}
+		}
+
+		if d.BlockCount%REPORT_COUNT == 0 {
+			bytesPrev, timePrev, isFinished = d.DoReporting(startTime, timePrev, bytesPrev, numRetries)
+			numRetries = 0
+		}
+	}
+
+	log.Printf("%d bytes received", d.BytesReceived)
+	d.IsStopped = true
+}
+
+// Reporting function to log download progress
+func (d *DownloadTracker) DoReporting(startTime, lastTime time.Time, bytesPrev, numRetries int) (int, time.Time, bool) {
+	timeNow := time.Now()
+	bytesNow := d.BlockCount * BLOCK_BYTES
+	rate := float64(bytesNow-bytesPrev) / timeNow.Sub(lastTime).Seconds()
+	endNow := false
+
+	bytesRemaining := d.FileDesc.Size - bytesNow
+	var remainingStr string
+	if rate > 0 {
+		timeRemaining := float64(bytesRemaining) / rate
+		remainingStr = GetTimeStr(timeRemaining)
+	} else {
+		remainingStr = "infinity"
+		endNow = true
+	}
+
+	if lastTime.After(startTime) {
+		log.Printf("%.1f GB of %.1f GB at ==> %.2f MB/s | %s",
+			float64(bytesNow)/1e9, float64(d.FileDesc.Size)/1e9, rate/1e6, remainingStr)
+	}
+
+	return bytesNow, timeNow, endNow
+}
+
+// Flushes the receive queue
+func (d *DownloadTracker) FlushRxQueue() {
+	for {
+		select {
+		case <-d.RxQueue:
+		default:
+			return
+		}
+	}
+}
+
+// Writes received data to file
+func (d *DownloadTracker) WriteFile() {
+	createdSecs := d.FileDesc.Created[:len(d.FileDesc.Created)-6]
+	createdMicrosecs := d.FileDesc.Created[len(d.FileDesc.Created)-6:]
+	filename := fmt.Sprintf("%s/%s_%s_%s.ch10", d.DestPath, d.FileDesc.Name, createdSecs, createdMicrosecs)
+	log.Printf("Ready to write file: %s", filename)
+
+	d.IsFileReady = true
+
+	file, err := os.Create(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	for !d.StopFlag {
+		select {
+		case segments := <-d.FileWriteQueue:
+			for _, segment := range segments {
+				remainingBytes := d.FileDesc.Size - d.BytesWritten
+				if remainingBytes < RX_BYTES {
+					file.Write(segment[PAYLOAD_START : PAYLOAD_START+remainingBytes])
+					d.BytesWritten += remainingBytes
+				} else {
+					file.Write(segment[PAYLOAD_START:])
+					d.BytesWritten += RX_BYTES
+				}
+				if d.BytesWritten >= d.FileDesc.Size {
+					d.StopFlag = true
+					break
+				}
+			}
+			file.Sync()
+		case <-time.After(100 * time.Millisecond):
+			log.Println("write_queue empty")
+		}
+	}
+
+	log.Printf("%d bytes written to file", d.BytesWritten)
+	log.Printf("File: %s", filename)
+}
+
+// Formats remaining time as a string
+func GetTimeStr(seconds float64) string {
+	if seconds >= 3600 {
+		return fmt.Sprintf("%.2f hrs", seconds/3600)
+	} else if seconds >= 60 {
+		return fmt.Sprintf("%.1f mins", seconds/60)
+	} else {
+		return fmt.Sprintf("%.1f secs", seconds)
+	}
+}
