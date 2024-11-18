@@ -44,6 +44,8 @@ type DownloadTracker struct {
 	BlockCount     uint64
 	RxSegs         [][]byte
 	RxSize         uint64
+	MaxConChunks   uint
+	NumAciveChunks uint
 }
 
 // Initialize the download tracker
@@ -57,6 +59,8 @@ func NewDownloadTracker(fileDesc FileType, destPath string, rxQueue chan []byte,
 		StopFlag:       false,
 		IsStopped:      true,
 		IsFileReady:    false,
+		MaxConChunks:   2,
+		NumAciveChunks: 0,
 	}
 
 	dlt.Init()
@@ -131,6 +135,22 @@ func (d *DownloadTracker) ProcessSegment(seg []byte) bool {
 func (d *DownloadTracker) DoDownload() {
 	logrus.Infof("Starting file download")
 	d.IsStopped = false
+
+	// Start listening in new thread
+	go d.DoListening()
+
+	for !d.StopFlag && !d.IsStopped {
+		if d.NumAciveChunks < d.MaxConChunks {
+			d.NumAciveChunks += 1
+			d.GetBlock(d.BlockCount)
+			d.incrementChunk()
+		}
+	}
+
+	log.Printf("%d bytes received", d.BytesReceived)
+}
+
+func (d *DownloadTracker) DoListening() {
 	isFinished := false
 	numRetries := 0
 	bytesPrev := uint64(0)
@@ -168,8 +188,7 @@ outerForLoop:
 				isFinished = true
 				break outerForLoop
 			} else {
-				d.BlockCount += (1 << 8)
-				d.CurrentBlock += (1 << 8)
+				d.NumAciveChunks -= 1
 			}
 		}
 
@@ -178,9 +197,11 @@ outerForLoop:
 			numRetries = 0
 		}
 	}
+}
 
-	log.Printf("%d bytes received", d.BytesReceived)
-	d.IsStopped = true
+func (d *DownloadTracker) incrementChunk() {
+	d.BlockCount += (1 << 8)
+	d.CurrentBlock += (1 << 8)
 }
 
 // Reporting function to log download progress
