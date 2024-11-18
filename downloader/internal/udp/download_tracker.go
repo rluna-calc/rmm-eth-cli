@@ -118,7 +118,7 @@ func (d *DownloadTracker) ProcessSegment(seg []byte) bool {
 	okToIncrement := d.RxSize == RX_SEQ_LEN
 	if okToIncrement {
 		if len(d.FileWriteQueue) < cap(d.FileWriteQueue) {
-			d.FileWriteQueue <- d.RxSegs
+			// d.FileWriteQueue <- d.RxSegs
 		} else {
 			log.Println("File write queue is full")
 		}
@@ -133,10 +133,10 @@ func (d *DownloadTracker) DoDownload() {
 	d.IsStopped = false
 	isFinished := false
 	numRetries := 0
-	// bytesPrev := uint64(0)
-	// timePrev := time.Now()
+	bytesPrev := uint64(0)
+	timePrev := time.Now()
 
-	// startTime := time.Now()
+	startTime := time.Now()
 
 outerForLoop:
 	for !d.StopFlag && !isFinished {
@@ -173,10 +173,10 @@ outerForLoop:
 			}
 		}
 
-		// if d.BlockCount%REPORT_COUNT == 0 {
-		// 	bytesPrev, timePrev, isFinished = d.DoReporting(startTime, timePrev, bytesPrev, numRetries)
-		// 	numRetries = 0
-		// }
+		if d.BlockCount%REPORT_COUNT == 0 {
+			bytesPrev, timePrev, isFinished = d.DoReporting(startTime, timePrev, bytesPrev, numRetries)
+			numRetries = 0
+		}
 	}
 
 	log.Printf("%d bytes received", d.BytesReceived)

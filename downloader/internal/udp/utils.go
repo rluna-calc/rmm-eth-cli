@@ -95,7 +95,7 @@ func (r *Receiver) listen() {
 		bufferCount = (bufferCount + 1) & 0x1F
 
 		numBytes, _, err := conn.ReadFrom(buffer)
-		go r.processRx(buffer, bufferCount, numBytes)
+		go r.processRx(buffer, numBytes)
 
 		if err != nil {
 			if r.stopListening {
@@ -107,9 +107,7 @@ func (r *Receiver) listen() {
 	r.isRunning = false
 }
 
-func (r *Receiver) processRx(buffer []byte, bufferCount int, numBytes int) {
-	// buffer[0] = byte(bufferCount)
-
+func (r *Receiver) processRx(buffer []byte, numBytes int) {
 	if numBytes < 20 {
 		return
 	}
