@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -128,9 +129,9 @@ func main() {
 	}
 
 	// // Wait for tasks to end
-	// for rmm.tasksPending() {
-	// 	time.Sleep(200 * time.Millisecond)
-	// }
+	for rmm.TasksPending() {
+		time.Sleep(200 * time.Millisecond)
+	}
 
 	// rmm.stopAll()
 	// rmm.waitForThreads()

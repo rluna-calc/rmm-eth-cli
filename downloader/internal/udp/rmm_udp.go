@@ -66,6 +66,13 @@ func (r *Rmm) Stop() {
 	}
 }
 
+func (r *Rmm) TasksPending() bool {
+	if r.dlt != nil {
+		return !r.dlt.GetIsStopped()
+	}
+	return false
+}
+
 func (r *Rmm) SendJumboZeros() {
 	buf := make([]byte, DISCOVER_SIZE)
 	Send(buf, r.txIP, PORT_253)
