@@ -108,7 +108,7 @@ func (d *DownloadTracker) GetBlock(blockNum uint64) {
 
 // Processes a received segment
 func (d *DownloadTracker) ProcessSegment(seg []byte) bool {
-	reportedLen := uint64(uint64(seg[3]))<<8 | uint64(seg[2])
+	reportedLen := (uint64(uint64(seg[3]))<<8 | uint64(seg[2])) * 2
 	if uint64(len(seg)-PAYLOAD_START) == reportedLen {
 		d.BytesReceived += reportedLen
 		d.RxSize += reportedLen
@@ -133,10 +133,10 @@ func (d *DownloadTracker) DoDownload() {
 	d.IsStopped = false
 	isFinished := false
 	numRetries := 0
-	bytesPrev := uint64(0)
-	timePrev := time.Now()
+	// bytesPrev := uint64(0)
+	// timePrev := time.Now()
 
-	startTime := time.Now()
+	// startTime := time.Now()
 
 outerForLoop:
 	for !d.StopFlag && !isFinished {
@@ -171,10 +171,10 @@ outerForLoop:
 			}
 		}
 
-		if d.BlockCount%REPORT_COUNT == 0 {
-			bytesPrev, timePrev, isFinished = d.DoReporting(startTime, timePrev, bytesPrev, numRetries)
-			numRetries = 0
-		}
+		// if d.BlockCount%REPORT_COUNT == 0 {
+		// 	bytesPrev, timePrev, isFinished = d.DoReporting(startTime, timePrev, bytesPrev, numRetries)
+		// 	numRetries = 0
+		// }
 	}
 
 	log.Printf("%d bytes received", d.BytesReceived)
