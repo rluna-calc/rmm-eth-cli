@@ -79,8 +79,8 @@ func (d *DownloadTracker) ResetSegments() {
 
 // Starts the download and writing processes
 func (d *DownloadTracker) Start() {
-	go d.WriteFile()
-	d.WaitForFileReady()
+	// go d.WriteFile()
+	// d.WaitForFileReady()
 	go d.DoDownload()
 }
 
@@ -151,16 +151,18 @@ outerForLoop:
 			select {
 			case segment := <-d.RxQueue:
 				okBlockIncrement = d.ProcessSegment(segment)
+				// logrus.Infof("num: %d, seg: %02x", segment[0], segment[9])
 				if okBlockIncrement {
 					break innerForLoop
 				}
 			case <-time.After(100 * time.Millisecond):
-				log.Printf("Rx queue empty on segment %d. Retrying block %d", i, d.CurrentBlock)
+				logrus.Warnf("Rx queue empty on segment %d. Retrying block %d", i, d.CurrentBlock)
 				numRetries++
 				break innerForLoop
 			}
 		}
 
+		// okBlockIncrement = true
 		if okBlockIncrement {
 			if d.BytesReceived >= d.FileDesc.Size {
 				isFinished = true

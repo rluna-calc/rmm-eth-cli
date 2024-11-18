@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
-	"net"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -21,16 +20,16 @@ const (
 	BUFFER_SIZE    = 9000
 )
 
-func getLocalIP() (string, error) {
-	conn, err := net.Dial("udp", "8.8.8.8:80")
-	if err != nil {
-		return "", err
-	}
-	defer conn.Close()
+// func getLocalIP() (string, error) {
+// 	conn, err := net.Dial("udp", "8.8.8.8:80")
+// 	if err != nil {
+// 		return "", err
+// 	}
+// 	defer conn.Close()
 
-	localAddr := conn.LocalAddr().(*net.UDPAddr)
-	return localAddr.IP.String(), nil
-}
+// 	localAddr := conn.LocalAddr().(*net.UDPAddr)
+// 	return localAddr.IP.String(), nil
+// }
 
 type Rmm struct {
 	txIP      string
@@ -41,7 +40,7 @@ type Rmm struct {
 }
 
 func NewRmm() *Rmm {
-	rxQueue := make(chan []byte, 100)
+	rxQueue := make(chan []byte, 128)
 	rmm := &Rmm{
 		txIP:    "192.168.0.255",
 		rxQueue: rxQueue,

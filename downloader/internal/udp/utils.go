@@ -54,8 +54,10 @@ func (r *Receiver) Stop() {
 }
 
 func (r *Receiver) listen() {
-	addr := fmt.Sprintf(":%d", r.port)
-	conn, err := net.ListenPacket("udp", addr)
+	addr_str := fmt.Sprintf(":%d", r.port)
+	// conn, err := net.ListenPacket("udp", addr)
+	addr, _ := net.ResolveUDPAddr("udp", addr_str)
+	conn, err := net.ListenUDP("udp", addr)
 	if err != nil {
 		logrus.Fatalf("Error listening on port %d: %v", r.port, err)
 		return
@@ -64,28 +66,60 @@ func (r *Receiver) listen() {
 
 	logrus.Debugf("Listening for UDP packets on port %d...", r.port)
 
+	// // Get the file descriptor for the connection
+	// fd, err := conn.(*net.UDPConn).File()
+	// if err != nil {
+	// 	logrus.Fatal(err)
+	// }
+	// defer fd.Close()
+
+	// Set the receive buffer size to 1 MB
+	// err = syscall.SetsockoptInt(syscall.Handle(fd.Fd()), syscall.SOL_SOCKET, syscall.SO_RCVBUF, 1024*1024)
+	// if err != nil {
+	// 	logrus.Fatal(err)
+	// }
+
+	conn.SetReadBuffer(1024 * 1024)
+	logrus.Debug("UDP receive buffer size set to 1 MB")
+
+	// buffer := make([]byte, BUFFER_SIZE)
+	// Create a slice of byte slices
+	bufferPool := make([][]byte, 32)
+	for i := range bufferPool {
+		bufferPool[i] = make([]byte, BUFFER_SIZE) // Each element is a byte array of size BUFFER_SIZE
+	}
+	bufferCount := 0
+
 	for !r.stopListening {
-		buffer := make([]byte, BUFFER_SIZE)
-		num_bytes, addr, err := conn.ReadFrom(buffer)
+		buffer := bufferPool[bufferCount]
+		bufferCount = (bufferCount + 1) & 0x1F
+
+		numBytes, _, err := conn.ReadFrom(buffer)
+		go r.processRx(buffer, bufferCount, numBytes)
+
 		if err != nil {
 			if r.stopListening {
 				return
 			}
 			continue
 		}
-
-		// // Filter out packets from self or too small to be valid
-		// localIP, err := getLocalIP()
-		// if err == nil && addr.(*net.UDPAddr).IP.String() == localIP {
-		// 	continue
-		// }
-
-		if num_bytes < 20 {
-			continue
-		}
-
-		logrus.Debugf("Received message: %d bytes from %s", num_bytes, addr.String())
-		r.messageChannel <- buffer[:num_bytes]
 	}
 	r.isRunning = false
+}
+
+func (r *Receiver) processRx(buffer []byte, bufferCount int, numBytes int) {
+	// buffer[0] = byte(bufferCount)
+
+	if numBytes < 20 {
+		return
+	}
+
+	// Send the data to the channel
+	select {
+	case r.messageChannel <- buffer[:numBytes]: // This will be non-blocking if there's space in the buffer
+		// Successfully sent to the channel
+	default:
+		// Optional: Handle the case where the channel is full, such as logging or discarding
+		logrus.Warn("Dropped packet due to full channel buffer")
+	}
 }
