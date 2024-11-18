@@ -74,11 +74,11 @@ func (r *Receiver) listen() {
 			continue
 		}
 
-		// Filter out packets from self or too small to be valid
-		localIP, err := getLocalIP()
-		if err == nil && addr.(*net.UDPAddr).IP.String() == localIP {
-			continue
-		}
+		// // Filter out packets from self or too small to be valid
+		// localIP, err := getLocalIP()
+		// if err == nil && addr.(*net.UDPAddr).IP.String() == localIP {
+		// 	continue
+		// }
 
 		if num_bytes < 20 {
 			continue
