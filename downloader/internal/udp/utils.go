@@ -95,7 +95,7 @@ func (r *Receiver) listen() {
 		bufferCount = (bufferCount + 1) & 0x1F
 
 		numBytes, _, err := conn.ReadFrom(buffer)
-		go r.processRx(buffer, numBytes)
+		r.processRx(buffer, numBytes)
 
 		if err != nil {
 			if r.stopListening {
