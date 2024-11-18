@@ -199,6 +199,9 @@ func (r *Rmm) Download(filename, dest string) {
 
 func (r *Rmm) requestBlock(blockNum uint64) {
 	// Define behavior for requesting a block
+	hexString := fmt.Sprintf("000301000000%08X", blockNum)
+	buf, _ := hex.DecodeString(hexString)
+	Send(buf, r.txIP, PORT_252)
 }
 
 func (r *Rmm) ReadContents() {
