@@ -1,0 +1,32 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Downloader",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/downloader/cmd/downloader/main.go",
+            "args": [
+                    //   "--list",
+                      "--file", "File001",
+                      "--dest", ".",
+                    //   "--verbose"
+            ]
+        },
+        {
+            "name": "UDP",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/downloader/cmd/udptester/main.go",
+            "args": [
+                      "--port", "252",
+                      "--message", "0003000100000000000c", "--hex"
+            ]
+        },
+    ]
+}
