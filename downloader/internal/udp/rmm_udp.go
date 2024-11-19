@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -98,8 +99,11 @@ func (r *Rmm) waitForRx() []byte {
 }
 
 func (r *Rmm) parseIdentityResponse(resp []byte) bool {
-	serialNumber := string(resp[20:40])
-	modelNumber := string(resp[54:94])
+	serialParts := bytes.Split(resp[20:40], []byte{0x00})
+	serialNumber := strings.TrimSpace(string(serialParts[len(serialParts)-1]))
+
+	modelParts := bytes.Split(resp[54:94], []byte{0x00})
+	modelNumber := strings.TrimSpace(string(modelParts[len(modelParts)-1]))
 
 	logrus.Infof("SerialNumber: %s", serialNumber)
 	logrus.Infof("ModelNumber: %s", modelNumber)
