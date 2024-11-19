@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/sirupsen/logrus"
 )
 
@@ -20,7 +21,7 @@ type FileType struct {
 
 // Constants
 const (
-	REPORT_COUNT  = 1000
+	REPORT_COUNT  = 100000
 	PAYLOAD_START = 10
 	BLOCK_BYTES   = 512
 	RX_BLOCKS     = 16
@@ -30,37 +31,39 @@ const (
 )
 
 type DownloadTracker struct {
-	FileDesc       FileType
-	DestPath       string
-	RxQueue        chan []byte
-	RequestBlockCb func(uint64)
-	StopFlag       bool
-	IsStopped      bool
-	IsFileReady    bool
-	FileWriteQueue chan [][]byte
-	BytesWritten   uint64
-	BytesReceived  uint64
-	CurrentBlock   uint64
-	BlockCount     uint64
-	RxSegs         [][]byte
-	RxSize         uint64
-	MaxConChunks   uint
-	NumAciveChunks uint
+	FileDesc        FileType
+	DestPath        string
+	RxQueue         chan []byte
+	RequestBlockCb  func(uint64)
+	StopListeningCb func()
+	StopFlag        bool
+	IsStopped       bool
+	IsFileReady     bool
+	FileWriteQueue  chan [][]byte
+	BytesWritten    uint64
+	BytesReceived   uint64
+	CurrentBlock    uint64
+	BlockCount      uint64
+	RxSegs          [][]byte
+	RxSize          uint64
+	MaxConChunks    uint
+	NumAciveChunks  uint
 }
 
 // Initialize the download tracker
-func NewDownloadTracker(fileDesc FileType, destPath string, rxQueue chan []byte, requestBlockCb func(uint64)) *DownloadTracker {
+func NewDownloadTracker(fileDesc FileType, destPath string, rxQueue chan []byte, requestBlockCb func(uint64), stopListeningCb func()) *DownloadTracker {
 	dlt := &DownloadTracker{
-		FileDesc:       fileDesc,
-		DestPath:       destPath,
-		RxQueue:        rxQueue,
-		RequestBlockCb: requestBlockCb,
-		FileWriteQueue: make(chan [][]byte, 10), // Adjust buffer size as needed
-		StopFlag:       false,
-		IsStopped:      true,
-		IsFileReady:    false,
-		MaxConChunks:   2,
-		NumAciveChunks: 0,
+		FileDesc:        fileDesc,
+		DestPath:        destPath,
+		RxQueue:         rxQueue,
+		RequestBlockCb:  requestBlockCb,
+		StopListeningCb: stopListeningCb,
+		FileWriteQueue:  make(chan [][]byte, 10), // Adjust buffer size as needed
+		StopFlag:        false,
+		IsStopped:       true,
+		IsFileReady:     false,
+		MaxConChunks:    2,
+		NumAciveChunks:  0,
 	}
 
 	dlt.Init()
@@ -83,8 +86,6 @@ func (d *DownloadTracker) ResetSegments() {
 
 // Starts the download and writing processes
 func (d *DownloadTracker) Start() {
-	// go d.WriteFile()
-	// d.WaitForFileReady()
 	go d.DoDownload()
 }
 
@@ -131,23 +132,42 @@ func (d *DownloadTracker) ProcessSegment(seg []byte) bool {
 	return okToIncrement
 }
 
+func (d *DownloadTracker) slowdownIfEndOfFile() {
+	// Slow down toward the end of the file
+	if d.MaxConChunks > 1 {
+		numRemainingChunks := d.getCountRemainingChunks()
+		if numRemainingChunks < d.MaxConChunks*50 {
+			d.MaxConChunks = 1
+		}
+	}
+}
+
+func (d *DownloadTracker) requestBlockIfOk() {
+	// Request
+	if d.NumAciveChunks < d.MaxConChunks {
+		d.NumAciveChunks += 1
+		d.GetBlock(d.BlockCount)
+		d.incrementChunk()
+	}
+}
+
 // Performs the download loop
 func (d *DownloadTracker) DoDownload() {
 	logrus.Infof("Starting file download")
 	d.IsStopped = false
 
+	// go d.WriteFile()
+	// d.WaitForFileReady()
+
 	// Start listening in new thread
 	go d.DoListening()
 
 	for !d.StopFlag && !d.IsStopped {
-		if d.NumAciveChunks < d.MaxConChunks {
-			d.NumAciveChunks += 1
-			d.GetBlock(d.BlockCount)
-			d.incrementChunk()
-		}
+		// d.slowdownIfEndOfFile()
+		d.requestBlockIfOk()
 	}
 
-	log.Printf("%d bytes received", d.BytesReceived)
+	logrus.Infof("%s bytes received", humanize.Comma(int64(d.BytesReceived)))
 }
 
 func (d *DownloadTracker) DoListening() {
@@ -197,6 +217,16 @@ outerForLoop:
 			numRetries = 0
 		}
 	}
+
+	d.StopListeningCb()
+	d.IsStopped = true
+}
+
+func (d *DownloadTracker) getCountRemainingChunks() uint {
+	bytesNow := d.BlockCount * BLOCK_BYTES
+	bytesRemaining := d.FileDesc.Size - bytesNow
+	chunksRemaining := bytesRemaining / RX_SEQ_LEN
+	return uint(chunksRemaining)
 }
 
 func (d *DownloadTracker) incrementChunk() {

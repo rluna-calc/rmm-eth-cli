@@ -66,19 +66,6 @@ func (r *Receiver) listen() {
 
 	logrus.Debugf("Listening for UDP packets on port %d...", r.port)
 
-	// // Get the file descriptor for the connection
-	// fd, err := conn.(*net.UDPConn).File()
-	// if err != nil {
-	// 	logrus.Fatal(err)
-	// }
-	// defer fd.Close()
-
-	// Set the receive buffer size to 1 MB
-	// err = syscall.SetsockoptInt(syscall.Handle(fd.Fd()), syscall.SOL_SOCKET, syscall.SO_RCVBUF, 1024*1024)
-	// if err != nil {
-	// 	logrus.Fatal(err)
-	// }
-
 	conn.SetReadBuffer(1024 * 1024)
 	logrus.Debug("UDP receive buffer size set to 1 MB")
 

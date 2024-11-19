@@ -20,17 +20,6 @@ const (
 	BUFFER_SIZE    = 9000
 )
 
-// func getLocalIP() (string, error) {
-// 	conn, err := net.Dial("udp", "8.8.8.8:80")
-// 	if err != nil {
-// 		return "", err
-// 	}
-// 	defer conn.Close()
-
-// 	localAddr := conn.LocalAddr().(*net.UDPAddr)
-// 	return localAddr.IP.String(), nil
-// }
-
 type Rmm struct {
 	txIP      string
 	files     []FileType
@@ -187,7 +176,7 @@ func (r *Rmm) Download(filename, dest string) {
 	}
 
 	logrus.Infof("Downloading file: %s", file.Name)
-	r.dlt = NewDownloadTracker(file, dest, r.rxQueue, r.requestBlock)
+	r.dlt = NewDownloadTracker(file, dest, r.rxQueue, r.requestBlock, r.Stop)
 	r.dlt.Start()
 
 	// Wait for download to start
