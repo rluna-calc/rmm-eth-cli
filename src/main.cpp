@@ -88,7 +88,7 @@ int main(int argc, char** argv) {
     bool rmm_found = rmm.search();
 
     if (!rmm_found) {
-        printf("ERROR: RMM was not found");
+        printf("ERROR: RMM was not found\n");
     }
 
     // RxQueue rxq(16);

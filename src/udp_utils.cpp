@@ -80,10 +80,18 @@ void Receiver::_close_socket() {
 
 // Function to send a UDP packet to a given IP and port
 void send_udp_packet(const char* ip, int port, const uint8_t* buffer, const int len) {
-// void send_udp_packet(const std::string& ip, int port, const std::vector<uint8_t>& buffer) {
+    // Create socket
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
         throw std::runtime_error("Failed to create socket.");
+    }
+
+    // Allow broadcasting
+    int broadcast = 1;
+    if (setsockopt(sock, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast)) < 0) {
+        printf("Error setting socket option for broadcast: %s\n",strerror(errno));
+        close(sock);
+        return;
     }
 
     struct sockaddr_in dest_addr;
