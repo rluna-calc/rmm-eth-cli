@@ -20,9 +20,9 @@ struct Receiver {
     void _run();
     void _close_socket();
 
-    bool _stop;
     int _port;
     int _sock;
+    bool _stop;
     bool _is_running;
     RxQueue* _q;
     std::thread _th;

@@ -7,6 +7,7 @@ constexpr uint32_t PORT_253 = 253;
 constexpr uint32_t PORT_BROADCAST = 255;
 constexpr uint32_t DISCOVER_SIZE = 8548;
 
+using namespace std;
 
 Rmm::Rmm() : _is_ready(false), _stop(false) {
     _rxq = new RxQueue(16);
@@ -20,7 +21,7 @@ Rmm::Rmm() : _is_ready(false), _stop(false) {
 Rmm::~Rmm() {
     stop_all();
 
-    for (int i = 0; i < _rx.size(); i++) {
+    for (size_t i = 0; i < _rx.size(); i++) {
         delete _rx[i];
     }
 
@@ -30,14 +31,14 @@ Rmm::~Rmm() {
 void Rmm::stop_all() {
     //TODO: dlt
 
-    for (int i = 0; i < _rx.size(); i++) {
+    for (size_t i = 0; i < _rx.size(); i++) {
         _rx[i]->start();
     }
 }
 
 bool Rmm::is_ready() {
     bool ret = true;
-    for (int i = 0; i < _rx.size(); i++) {
+    for (size_t i = 0; i < _rx.size(); i++) {
         ret &= _rx[i]->is_running();
     }
 
@@ -68,7 +69,7 @@ void Rmm::wait_for_ready() {
     //     self.dlt.thread_dl.join()
     //     self.dlt.thread_write.join()
 
-    for (int i = 0; i < _rx.size(); i++) {
+    for (size_t i = 0; i < _rx.size(); i++) {
         if(_rx[i]->_th.joinable()) {
             _rx[i]->_th.join();
         }
@@ -105,7 +106,7 @@ void Rmm::print_files() {
 
 // Start all Rx threads
 void Rmm::_start() {
-    for (int i = 0; i < _rx.size(); i++) {
+    for (size_t i = 0; i < _rx.size(); i++) {
         _rx[i]->start();
     }
 }
