@@ -11,9 +11,10 @@
 #include <iostream>
 #include "rmm.h"
 
-std::atomic<bool> running(true);
 std::vector<std::string> file_names;
 std::string download_path;
+
+Rmm* _rmm = nullptr;
 
 typedef struct {
     bool help;
@@ -28,7 +29,7 @@ app_args_t _args;
 void signal_handler(int signal) {
     if (signal == SIGINT) {
         std::cerr << "Caught Ctrl+C! Exiting gracefully..." << std::endl;
-        running = false;
+        _rmm->stop_all();
     }
 }
 
@@ -81,10 +82,14 @@ int main(int argc, char** argv) {
     }
 
     Rmm rmm;
+    _rmm = &rmm; // store for graceful exit
+
+    rmm.wait_for_ready();
+    // bool rmm_found = rmm.search();
+
     // RxQueue rxq(16);
     // Receiver rx(1234, &rxq);
     // rx.start();
-    // std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     // rx.stop();
 
     // if (_args.list) {
@@ -92,7 +97,8 @@ int main(int argc, char** argv) {
     //     rmm.print_files()
     // }
 
-
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+    printf("Exiting.\n");
 
     return 0;
 }
