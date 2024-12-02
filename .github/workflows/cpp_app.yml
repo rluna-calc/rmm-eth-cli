@@ -16,6 +16,6 @@ jobs:
     - name: Build
       run: cmake --build ${{ github.workspace }}/build --config Release
 
-    - name: Test (optional)
+    - name: Test
       working-directory: ${{github.workspace}}/build/tests
       run: ctest

@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <stdint.h>
 
-TEST(Leonardo, Initialize) {
+TEST(Downloader, Initialize) {
     ASSERT_TRUE(true);
 }

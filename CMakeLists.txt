@@ -15,4 +15,4 @@ add_subdirectory(src)
 add_subdirectory(tests)
 
 # Optionally include packaging or installation rules
-# install(TARGETS LeonardoMVP DESTINATION bin)
+# install(TARGETS downloader DESTINATION bin)
