@@ -3,15 +3,15 @@
 #include <string.h>
 
 const char* TX_IP = "192.168.0.255";
-// constexpr uint32_t PORT_252 = 252;
-// constexpr uint32_t PORT_253 = 253;
-// constexpr uint32_t PORT_BROADCAST = 255;
+constexpr uint32_t PORT_252 = 252;
+constexpr uint32_t PORT_253 = 253;
+constexpr uint32_t PORT_BROADCAST = 255;
 constexpr uint32_t DISCOVER_SIZE = 8548;
 
-
-constexpr uint32_t PORT_252 = 1234;
-constexpr uint32_t PORT_253 = 1235;
-constexpr uint32_t PORT_BROADCAST = 1236;
+// // Debug
+// constexpr uint32_t PORT_252 = 1234;
+// constexpr uint32_t PORT_253 = 1235;
+// constexpr uint32_t PORT_BROADCAST = 1236;
 
 
 const uint8_t IDENTITY_MSG[] = {0x00,0x05,0x00,0x01,0x00,
@@ -27,7 +27,7 @@ Rmm::Rmm() : _is_ready(false), _stop(false) {
     _rxq = new RxQueue(16);
 
     _rx.push_back(new Receiver(PORT_252, _rxq));
-    _rx.push_back(new Receiver(PORT_253, _rxq));
+    _rx.push_back(new Receiver(PORT_BROADCAST, _rxq));
 
     _start();
 }
