@@ -1,3 +1,6 @@
+#ifndef _UDP_UTILS_H_
+#define _UDP_UTILS_H_
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <thread>
@@ -28,4 +31,6 @@ struct Receiver {
     uint32_t _buf_idx;
 };
 
-void send_packet(const char* ip, int port, const uint8_t* buffer, const int len);
+void send_udp_packet(const char* ip, int port, const uint8_t* buffer, const int len);
+
+#endif

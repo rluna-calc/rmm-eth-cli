@@ -1,4 +1,5 @@
 #include <rmm.h>
+#include <iostream>
 
 const char* TX_IP = "192.168.0.255";
 constexpr uint32_t PORT_252 = 252;
@@ -8,10 +9,22 @@ constexpr uint32_t DISCOVER_SIZE = 8548;
 
 
 Rmm::Rmm() : _is_ready(false), _stop(false) {
-    _rx.push_back(new Receiver(PORT_252));
-    _rx.push_back(new Receiver(PORT_253));
+    _rxq = new RxQueue(16);
+
+    _rx.push_back(new Receiver(PORT_252, _rxq));
+    _rx.push_back(new Receiver(PORT_253, _rxq));
 
     _start();
+}
+
+Rmm::~Rmm() {
+    stop_all();
+
+    for (int i = 0; i < _rx.size(); i++) {
+        delete _rx[i];
+    }
+
+    delete _rxq;
 }
 
 void Rmm::stop_all() {
@@ -63,12 +76,13 @@ void Rmm::wait_for_ready() {
 }
 
 void Rmm::search() {
-    std::cout << "Sending discovery message..." << std::endl;
-    std::vector<uint8_t> buf(8548, 0); // Simulated discovery message
-    send_udp_packet("192.168.0.255", PORT_253, buf);
+    // const char buf[] = {};
+    // std::cout << "Sending discovery message..." << std::endl;
+    // std::vector<uint8_t> buf(8548, 0); // Simulated discovery message
+    // send_udp_packet("192.168.0.255", PORT_253, buf);
 }
 
-void Rmm::download(const std::string& filename) {
+void Rmm::download(const char* filename) {
     std::cout << "Downloading file: " << filename << std::endl;
     // Simulate downloading a file (this could be expanded)
     std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -76,15 +90,15 @@ void Rmm::download(const std::string& filename) {
 }
 
 void Rmm::read_contents() {
-    // Simulate reading file contents
-    file_names = {"File1", "File2", "File3"};
+    // // Simulate reading file contents
+    // file_names = {"File1", "File2", "File3"};
 }
 
 void Rmm::print_files() {
-    std::cout << "Files on RMM:" << std::endl;
-    for (const auto& file : file_names) {
-        std::cout << "  " << file << std::endl;
-    }
+    // std::cout << "Files on RMM:" << std::endl;
+    // for (const auto& file : file_names) {
+    //     std::cout << "  " << file << std::endl;
+    // }
 }
 
 

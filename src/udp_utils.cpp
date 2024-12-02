@@ -79,7 +79,7 @@ void Receiver::_close_socket() {
 
 
 // Function to send a UDP packet to a given IP and port
-void send_packet(const char* ip, int port, const uint8_t* buffer, const int len) {
+void send_udp_packet(const char* ip, int port, const uint8_t* buffer, const int len) {
 // void send_udp_packet(const std::string& ip, int port, const std::vector<uint8_t>& buffer) {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {

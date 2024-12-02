@@ -1,3 +1,6 @@
+#ifndef _RX_QUEUE_H_
+#define _RX_QUEUE_H_
+
 #include <vector>
 #include <mutex>
 #include <stdint.h>
@@ -21,4 +24,4 @@ struct RxQueue {
     std::mutex _mutex;
 };
 
-void send_packet(const char* ip, int port, const uint8_t* buffer, const int len);
+#endif

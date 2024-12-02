@@ -6,6 +6,7 @@ add_executable(
     main.cpp
     udp_utils.cpp
     rx_queue.cpp
+    rmm.cpp
 )
 
 # Link libraries or other dependencies (if needed)

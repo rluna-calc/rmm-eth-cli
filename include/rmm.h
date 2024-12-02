@@ -1,7 +1,11 @@
+#ifndef _RMM_H_
+#define _RMM_H_
+
 #include <stdint.h>
 #include <stdbool.h>
-#include <udp_utils.h>
 #include <vector>
+#include "udp_utils.h"
+#include "rx_queue.h"
 
 // A simple UDP receiver class to listen for incoming packets
 struct Rmm {
@@ -24,4 +28,8 @@ struct Rmm {
     bool _is_ready;
     bool _stop;
     std::vector<Receiver*> _rx;
+    RxQueue* _rxq;
+
 };
+
+#endif

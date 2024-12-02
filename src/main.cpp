@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <ctime>
 #include <iostream>
+#include "rmm.h"
 
 std::atomic<bool> running(true);
 std::vector<std::string> file_names;
@@ -67,7 +68,6 @@ void print_usage(void) {
     printf("Usage TODO ...\n");
 }
 
-#include <udp_utils.h>
 int main(int argc, char** argv) {
     // Register signal handler for graceful shutdown
     std::signal(SIGINT, signal_handler);
@@ -80,11 +80,12 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    RxQueue rxq(16);
-    Receiver rx(1234, &rxq);
-    rx.start();
-    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-    rx.stop();
+    Rmm rmm;
+    // RxQueue rxq(16);
+    // Receiver rx(1234, &rxq);
+    // rx.start();
+    // std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+    // rx.stop();
 
     // if (_args.list) {
     //     rmm.read_contents()
