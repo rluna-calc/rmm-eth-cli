@@ -1,5 +1,6 @@
 #include <rmm.h>
 #include <iostream>
+#include <string.h>
 
 const char* TX_IP = "192.168.0.255";
 constexpr uint32_t PORT_252 = 252;
@@ -7,9 +8,17 @@ constexpr uint32_t PORT_253 = 253;
 constexpr uint32_t PORT_BROADCAST = 255;
 constexpr uint32_t DISCOVER_SIZE = 8548;
 
+
+const uint8_t IDENTITY_MSG[] = {0x00,0x05,0x00,0x01,0x00,
+                                0x00,0x00,0x00,0x00,0x00};
+
+
 using namespace std;
 
 Rmm::Rmm() : _is_ready(false), _stop(false) {
+    // _serial_number = "";
+    // _model_number = "";
+
     _rxq = new RxQueue(16);
 
     _rx.push_back(new Receiver(PORT_252, _rxq));
@@ -76,11 +85,24 @@ void Rmm::wait_for_ready() {
     }
 }
 
-void Rmm::search() {
-    // const char buf[] = {};
-    // std::cout << "Sending discovery message..." << std::endl;
-    // std::vector<uint8_t> buf(8548, 0); // Simulated discovery message
-    // send_udp_packet("192.168.0.255", PORT_253, buf);
+q_elem_t* Rmm::wait_for_rx() {
+    q_elem_t* elem = nullptr;
+    
+    for (int i = 0; i < 10; i++) {
+        elem = _rxq->get();
+        if (elem) {
+            break;
+        }
+
+        this_thread::sleep_for(chrono::milliseconds(100));
+    }
+
+    return elem;
+}
+
+bool Rmm::search() {
+    _send_jumbo_zeros();
+    return _get_identity();
 }
 
 void Rmm::download(const char* filename) {
@@ -102,7 +124,31 @@ void Rmm::print_files() {
     // }
 }
 
+bool Rmm::_get_identity() {
+    const uint8_t* buf = IDENTITY_MSG;
+    printf("Sending discovery message...\n");
+    send_udp_packet(TX_IP, PORT_BROADCAST, buf, sizeof(IDENTITY_MSG));
 
+    const q_elem_t* resp = wait_for_rx();
+    return _parse_identity_response(resp);
+}
+
+bool Rmm::_parse_identity_response(const q_elem_t* resp) {
+    if (!resp) {
+        return false;
+    }
+
+    printf("Ready to parse response...\n");
+
+
+    return true;
+}
+
+void Rmm::_send_jumbo_zeros() {
+    uint8_t buf[DISCOVER_SIZE];
+    memset(buf, 0, DISCOVER_SIZE);
+    send_udp_packet(TX_IP, PORT_253, buf, DISCOVER_SIZE);
+}
 
 // Start all Rx threads
 void Rmm::_start() {

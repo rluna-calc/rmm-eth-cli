@@ -12,12 +12,12 @@ RxQueue::RxQueue(int size) {
     _num_elems = 0;
 }
 
-bool RxQueue::push(uint8_t* new_buf) {
+bool RxQueue::push(q_elem_t* new_elem) {
     std::lock_guard<std::mutex> lock(_mutex);
 
     bool ret = false;
     if (_num_elems < _max_elems) {
-        _buf[_head++] = new_buf;
+        _buf[_head++] = new_elem;
         _num_elems++;
         _head = _wrap(_head);
 
@@ -27,10 +27,10 @@ bool RxQueue::push(uint8_t* new_buf) {
     return ret;
 }
 
-uint8_t* RxQueue::get() {
+q_elem_t* RxQueue::get() {
     std::lock_guard<std::mutex> lock(_mutex);
 
-    uint8_t* ret = nullptr;
+    q_elem_t* ret = nullptr;
     if (_num_elems > 0) {
         ret = _buf[_tail++];
         _num_elems--;

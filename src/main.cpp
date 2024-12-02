@@ -85,7 +85,11 @@ int main(int argc, char** argv) {
     _rmm = &rmm; // store for graceful exit
 
     rmm.wait_for_ready();
-    // bool rmm_found = rmm.search();
+    bool rmm_found = rmm.search();
+
+    if (!rmm_found) {
+        printf("ERROR: RMM was not found");
+    }
 
     // RxQueue rxq(16);
     // Receiver rx(1234, &rxq);

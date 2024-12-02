@@ -6,16 +6,20 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+typedef struct {
+    uint32_t len;
+    uint8_t* buf;
+} q_elem_t;
 
 struct RxQueue {
     RxQueue(int size);
 
-    bool push(uint8_t* new_buf);
-    uint8_t* get();
+    bool push(q_elem_t* new_elem);
+    q_elem_t* get();
 
     uint32_t _wrap(uint32_t);
 
-    std::vector<uint8_t*> _buf;
+    std::vector<q_elem_t*> _buf;
     uint32_t _head;
     uint32_t _tail;
     uint32_t _num_elems;

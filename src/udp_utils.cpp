@@ -45,25 +45,25 @@ void Receiver::_run() {
 
     printf("Listening for UDP packets on port %d ... \n", _port);
 
-    uint8_t* rx_buf;
     sockaddr_in sender_addr;
     socklen_t sender_addr_len = sizeof(sender_addr);
+    q_elem_t elem;
     while (!_stop) {
         _is_running = true;
 
         // Get the receive buffer and increment index for next time
-        rx_buf = _buffer_pool[_buf_idx++];
+        elem.buf = _buffer_pool[_buf_idx++];
         _buf_idx = _buf_idx % NUM_BUFFER_POOL;
 
-        int received_bytes = recvfrom(_sock, rx_buf, BUFFER_SIZE, 0,
+        elem.len = recvfrom(_sock, elem.buf, BUFFER_SIZE, 0,
                                         (struct sockaddr*)&sender_addr, &sender_addr_len);
-        if (received_bytes < 0) {
+        if (elem.len < 0) {
             printf("Error receiving data \n");
             break;
         }
 
-        _q->push(rx_buf);
-        printf("Received %d bytes from %s\n", received_bytes, inet_ntoa(sender_addr.sin_addr));
+        _q->push(&elem);
+        printf("Received %d bytes from %s\n", elem.len, inet_ntoa(sender_addr.sin_addr));
     }
 
     _is_running = false;

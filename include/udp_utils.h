@@ -29,6 +29,7 @@ struct Receiver {
 
     uint8_t _buffer_pool[NUM_BUFFER_POOL][BUFFER_SIZE];
     uint32_t _buf_idx;
+
 };
 
 void send_udp_packet(const char* ip, int port, const uint8_t* buffer, const int len);
