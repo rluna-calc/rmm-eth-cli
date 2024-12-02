@@ -71,7 +71,7 @@ void Receiver::_run() {
 
         elem.len = recvfrom(_sock, elem.buf, BUFFER_SIZE, 0,
                                         (struct sockaddr*)&sender_addr, &sender_addr_len);
-        if (elem.len < 0) {
+        if (elem.len < 20) {
             // printf("Error receiving data \n");
             continue;
         }

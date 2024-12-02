@@ -106,7 +106,7 @@ q_elem_t* Rmm::wait_for_rx() {
 }
 
 bool Rmm::search() {
-    // _send_jumbo_zeros();
+    _send_jumbo_zeros();
     return _get_identity();
 }
 
