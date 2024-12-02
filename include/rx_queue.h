@@ -7,7 +7,7 @@
 #include <stdbool.h>
 
 typedef struct {
-    uint32_t len;
+    int32_t len;
     uint8_t* buf;
 } q_elem_t;
 

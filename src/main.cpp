@@ -91,18 +91,13 @@ int main(int argc, char** argv) {
         printf("ERROR: RMM was not found\n");
     }
 
-    // RxQueue rxq(16);
-    // Receiver rx(1234, &rxq);
-    // rx.start();
-    // rx.stop();
 
-    // if (_args.list) {
-    //     rmm.read_contents()
-    //     rmm.print_files()
-    // }
-
+    printf("Waiting a bit...\n");
     std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+    
+    rmm.stop_all();
+    rmm.wait_for_threads();
+    
     printf("Exiting.\n");
-
     return 0;
 }

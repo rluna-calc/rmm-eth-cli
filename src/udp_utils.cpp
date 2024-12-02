@@ -33,6 +33,20 @@ void Receiver::_run() {
         throw std::runtime_error("Failed to create socket.");
     }
 
+    // Set receive buffer size (1MB buffer)
+    int buffer_size = 1024 * 1024;
+    if (setsockopt(_sock, SOL_SOCKET, SO_RCVBUF, &buffer_size, sizeof(buffer_size)) < 0) {
+        throw std::runtime_error("Failed to set socket receive buffer size.");
+    }
+    
+    // Set socket timeout to 0.5 seconds (500 ms)
+    struct timeval timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 500000;  // 0.5 seconds
+    if (setsockopt(_sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0) {
+        throw std::runtime_error("Failed to set socket timeout.");
+    }
+
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
@@ -58,8 +72,8 @@ void Receiver::_run() {
         elem.len = recvfrom(_sock, elem.buf, BUFFER_SIZE, 0,
                                         (struct sockaddr*)&sender_addr, &sender_addr_len);
         if (elem.len < 0) {
-            printf("Error receiving data \n");
-            break;
+            // printf("Error receiving data \n");
+            continue;
         }
 
         _q->push(&elem);
@@ -68,6 +82,7 @@ void Receiver::_run() {
 
     _is_running = false;
     _close_socket();
+    printf("Finished listening on port %d\n", _port);
 }
 
 void Receiver::_close_socket() {

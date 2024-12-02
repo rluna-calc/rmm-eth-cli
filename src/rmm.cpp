@@ -3,10 +3,15 @@
 #include <string.h>
 
 const char* TX_IP = "192.168.0.255";
-constexpr uint32_t PORT_252 = 252;
-constexpr uint32_t PORT_253 = 253;
-constexpr uint32_t PORT_BROADCAST = 255;
+// constexpr uint32_t PORT_252 = 252;
+// constexpr uint32_t PORT_253 = 253;
+// constexpr uint32_t PORT_BROADCAST = 255;
 constexpr uint32_t DISCOVER_SIZE = 8548;
+
+
+constexpr uint32_t PORT_252 = 1234;
+constexpr uint32_t PORT_253 = 1235;
+constexpr uint32_t PORT_BROADCAST = 1236;
 
 
 const uint8_t IDENTITY_MSG[] = {0x00,0x05,0x00,0x01,0x00,
@@ -41,7 +46,7 @@ void Rmm::stop_all() {
     //TODO: dlt
 
     for (size_t i = 0; i < _rx.size(); i++) {
-        _rx[i]->start();
+        _rx[i]->stop();
     }
 }
 
@@ -101,7 +106,7 @@ q_elem_t* Rmm::wait_for_rx() {
 }
 
 bool Rmm::search() {
-    _send_jumbo_zeros();
+    // _send_jumbo_zeros();
     return _get_identity();
 }
 
@@ -138,7 +143,9 @@ bool Rmm::_parse_identity_response(const q_elem_t* resp) {
         return false;
     }
 
-    printf("Ready to parse response...\n");
+    printf("Ready to parse response...%d bytes\n", resp->len);
+
+    // std::vector<uint8_t> sub_resp(resp.begin() + 20, resp.begin() + 40);
 
 
     return true;
