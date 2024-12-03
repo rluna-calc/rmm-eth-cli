@@ -48,5 +48,8 @@ TEST(Rmm, ParseDiscovery) {
     rmm_t rmm;
 
     q_elem_t elem = get_discovery_response();
-    EXPECT_TRUE( rmm._parse_identity_response(&elem) );
+    ASSERT_TRUE( rmm._parse_identity_response(&elem) );
+    
+    EXPECT_EQ( rmm._serial_number, "S251NXAH34" );
+    EXPECT_EQ( rmm._model_number, "EXM02B6QSamsung SSD 850 PRO 256GB" );
 }

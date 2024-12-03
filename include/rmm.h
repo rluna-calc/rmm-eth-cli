@@ -4,7 +4,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string>
+#include <cstring>
 #include <vector>
+#include <algorithm>
 #include "udp_utils.h"
 #include "rx_queue.h"
 #include "print_utils.h"
@@ -172,19 +174,26 @@ struct Rmm {
         }
 
         printf("Ready to parse response...%d bytes\n", resp->len);
-
-        // std::vector<uint8_t> sub_resp(resp.begin() + 20, resp.begin() + 40);
-        // printf("%p\n", resp->buf);
         print_buf(resp->buf, resp->len);
 
+        // Extract serial number (bytes 20-40)
+        std::vector<uint8_t> serial_number_bytes(&resp->buf[20], &resp->buf[40]);
+        // Find the null byte and trim
+        auto null_pos = std::find(serial_number_bytes.begin(), serial_number_bytes.end(), 0);
+        serial_number_bytes.resize(null_pos - serial_number_bytes.begin());
 
-        for (int i = 0; i < 20; i++) {
-            printf("0x%02x,", resp->buf[i]);
-        }
-        printf("\n");
-
+        // Convert to string and trim leading/trailing whitespace
+        _serial_number = _trim(std::string(serial_number_bytes.begin(), serial_number_bytes.end()));
 
         return true;
+    }
+
+    // Helper function to trim leading/trailing whitespaces
+    std::string _trim(const std::string& str) {
+        const auto first = str.find_first_not_of(" \t\r\n");
+        if (first == std::string::npos) return ""; // No content
+        const auto last = str.find_last_not_of(" \t\r\n");
+        return str.substr(first, last - first + 1);
     }
 
     bool _is_ready;
