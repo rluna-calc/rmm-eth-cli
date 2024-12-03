@@ -56,6 +56,15 @@ q_elem_t get_discovery_response() {
     return elem;
 }
 
+q_elem_t get_content_response([[maybe_unused]] uint32_t idx)
+{
+    q_elem_t elem;
+    memcpy(elem.buf, FILES_RESP1, sizeof(FILES_RESP1));
+    elem.len = sizeof(FILES_RESP1);
+    return elem;
+}
+
+
 TEST(Rmm, Constructor) {
     rmm_t rmm;
     ASSERT_TRUE(true);
@@ -69,4 +78,19 @@ TEST(Rmm, ParseDiscovery) {
     
     EXPECT_TRUE(rmm._serial_number.find("S251NXAH34") != std::string::npos);
     EXPECT_TRUE(rmm._model_number.find("EXM02B6QSamsung SSD 850 PRO 256GB") != std::string::npos);
+}
+
+TEST(Rmm, ParseContent) {
+    rmm_t rmm;
+
+    q_elem_t elem = get_content_response(0);
+    rmm._parse_content_block(&elem);
+    
+    ASSERT_EQ(rmm._files.size(), 4);
+
+    EXPECT_EQ(rmm._files[0].filename, "File001");
+    EXPECT_EQ(rmm._files[0].start_block, 256);
+    EXPECT_EQ(rmm._files[0].block_count, 8373900);
+    EXPECT_EQ(rmm._files[0].file_size, 4287436432);
+    EXPECT_TRUE( !memcmp(rmm._files[0].created, "0101201900010800", 16) );
 }

@@ -95,7 +95,7 @@ struct Rmm {
 
     void print_files() {
         std::string strout = "Files on RMM:\n\n";
-        strout += std::string(12, ' ') + "Filename    StartBlock      BlockCount     Size           Created\n";
+        strout += "Filename    StartBlock      BlockCount     Size           Created\n";
 
         for (const auto& f : _files) {
             strout += " " + f.filename;
@@ -223,17 +223,14 @@ struct Rmm {
 
         file_t my_file;
 
-        // printf("content block: \n");
-        // print_buf(resp->buf, resp->len);
-
         for(int32_t i = 0; i < resp->len; i++) {
             if (searching_for_file) {
                 if(!memcmp(&resp->buf[i], "File", 4)) {
                     block = (uint8_t*) &resp->buf[i];
-                    // print_buf(block, 100);
+                    print_buf(block, 10);
 
                     searching_for_file = false;
-                    filename = (const char*) block;
+                    my_file.filename = (const char*) block;
 
                     my_file.start_block = _unpack64(&block[56]);
                     my_file.block_count = _unpack64(&block[64]);
