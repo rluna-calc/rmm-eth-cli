@@ -3,7 +3,7 @@
 #include <string.h>
 
 RxQueue::RxQueue(int size) {
-    q_elem_t elem;
+    q_elem_t elem = {0};
     for (int i = 0; i < size; i++) {
         _buf.push_back(elem);
     }

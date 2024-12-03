@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <string.h>
 #include <stdio.h>
-
+#include "print_utils.h"
 
 Receiver::Receiver(int port, RxQueue* rxq) :
     _port(port),
@@ -75,11 +75,8 @@ void Receiver::_run() {
         _q->push(&_elem);
         printf("Received %d bytes from %s\n", _elem.len, inet_ntoa(sender_addr.sin_addr));
 
-        printf("%p\n", _elem.buf);
-        for (int i = 0; i < 20; i++) {
-            printf("0x%02x,", _elem.buf[i]);
-        }
-        printf("\n");
+        // Debug print buf
+        // print_buf(_elem.buf, _elem.len);
     }
 
     _is_running = false;

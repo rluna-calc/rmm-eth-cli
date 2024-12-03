@@ -26,15 +26,14 @@ add_executable(
 
 
 target_link_libraries(
-    test_downloader
-  GTest::gtest_main
+  test_downloader
+  gtest
+  gtest_main
+  # GTest::gtest_main
 )
 
 include(GoogleTest)
 gtest_discover_tests(test_downloader)
 
-# Link testing framework (e.g., Google Test)
-# target_link_libraries(test_downloader )
-
 # Add the test to CTest
-add_test(NAME DownlaoderTest COMMAND test_downloader)
+# add_test(NAME DownloaderTest COMMAND test_downloader)

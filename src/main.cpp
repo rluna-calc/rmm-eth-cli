@@ -10,11 +10,15 @@
 #include <ctime>
 #include <iostream>
 #include "rmm.h"
+#include "rx_queue.h"
+#include "udp_utils.h"
 
 std::vector<std::string> file_names;
 std::string download_path;
 
-Rmm* _rmm = nullptr;
+using rmm_t = Rmm<Receiver>;
+
+rmm_t* _rmm = nullptr;
 
 typedef struct {
     bool help;
@@ -81,7 +85,7 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    Rmm rmm;
+    rmm_t rmm;
     _rmm = &rmm; // store for graceful exit
 
     rmm.wait_for_ready();
