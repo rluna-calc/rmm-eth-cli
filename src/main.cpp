@@ -25,6 +25,7 @@ typedef struct {
     bool list;
     bool all;
     std::string file;
+    std::string dest;
 } app_args_t;
 
 app_args_t _args;
@@ -63,6 +64,9 @@ void parse_arguments(int argc, char** argv) {
         }
         else if (arg == "--file") {
             _args.file = argv[++i];
+        }
+        else if (arg == "--dest") {
+            _args.dest = argv[++i];
         } else {
             std::cerr << "Invalid argument: " << arg << std::endl;
         }
@@ -102,11 +106,22 @@ int main(int argc, char** argv) {
         rmm.read_contents();
         rmm.print_files();
     }
+    else if (_args.all && _args.dest != "") {
 
+    }
+    else if (_args.file != "" && _args.dest != "") {
+        
+    }
+    else {
+        printf("Invalid arguments\n");
+    }
 
-    printf("Waiting to exit...\n");
+    while( rmm.tasks_pending() ) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    }
+
+    rmm.stop_all();
     rmm.wait_for_threads();
     
-    printf("Exiting.\n");
     return 0;
 }
