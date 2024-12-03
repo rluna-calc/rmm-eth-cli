@@ -1,9 +1,11 @@
 #include "rx_queue.h"
-
+#include <stdio.h>
+#include <string.h>
 
 RxQueue::RxQueue(int size) {
+    q_elem_t elem;
     for (int i = 0; i < size; i++) {
-        _buf.push_back(nullptr);
+        _buf.push_back(elem);
     }
 
     _max_elems = size;
@@ -17,10 +19,12 @@ bool RxQueue::push(q_elem_t* new_elem) {
 
     bool ret = false;
     if (_num_elems < _max_elems) {
-        _buf[_head++] = new_elem;
+        memcpy(_buf[_head].buf, new_elem->buf, new_elem->len);
+        _buf[_head].len = new_elem->len;
         _num_elems++;
-        _head = _wrap(_head);
-
+        _head = _wrap(_head+1);
+        printf("new_elem.buf = %p, _head: buf = %p\n", new_elem->buf, _buf[_head-1].buf);
+        printf("_head = %d, _tail = %d\n\n", _head, _tail);
         ret = true;
     }
 
@@ -32,9 +36,11 @@ q_elem_t* RxQueue::get() {
 
     q_elem_t* ret = nullptr;
     if (_num_elems > 0) {
-        ret = _buf[_tail++];
+        ret = &_buf[_tail++];
         _num_elems--;
         _tail = _wrap(_tail);
+        printf("ret.buf = %p, _head: buf = %p\n", ret->buf, _buf[_head-1].buf);
+        printf("_head = %d, _tail = %d\n\n", _head, _tail);
     }
 
     return ret;

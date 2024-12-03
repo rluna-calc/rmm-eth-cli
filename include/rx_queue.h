@@ -6,9 +6,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+constexpr uint32_t RX_BUFFER_SIZE = 9000;
+
 typedef struct {
     int32_t len;
-    uint8_t* buf;
+    uint8_t buf[RX_BUFFER_SIZE];
 } q_elem_t;
 
 struct RxQueue {
@@ -19,7 +21,7 @@ struct RxQueue {
 
     uint32_t _wrap(uint32_t);
 
-    std::vector<q_elem_t*> _buf;
+    std::vector<q_elem_t> _buf;
     uint32_t _head;
     uint32_t _tail;
     uint32_t _num_elems;

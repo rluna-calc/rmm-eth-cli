@@ -17,14 +17,17 @@ constexpr uint32_t DISCOVER_SIZE = 8548;
 const uint8_t IDENTITY_MSG[] = {0x00,0x05,0x00,0x01,0x00,
                                 0x00,0x00,0x00,0x00,0x00};
 
+constexpr uint32_t BUFFER_POOL_SIZE = 32;
 
 using namespace std;
 
-Rmm::Rmm() : _is_ready(false), _stop(false) {
-    // _serial_number = "";
-    // _model_number = "";
 
-    _rxq = new RxQueue(16);
+
+Rmm::Rmm() : _is_ready(false), _stop(false) {
+    _serial_number = "";
+    _model_number = "";
+
+    _rxq = new RxQueue(BUFFER_POOL_SIZE);
 
     _rx.push_back(new Receiver(PORT_252, _rxq));
     _rx.push_back(new Receiver(PORT_BROADCAST, _rxq));
@@ -106,7 +109,7 @@ q_elem_t* Rmm::wait_for_rx() {
 }
 
 bool Rmm::search() {
-    _send_jumbo_zeros();
+    // _send_jumbo_zeros();
     return _get_identity();
 }
 
@@ -146,6 +149,12 @@ bool Rmm::_parse_identity_response(const q_elem_t* resp) {
     printf("Ready to parse response...%d bytes\n", resp->len);
 
     // std::vector<uint8_t> sub_resp(resp.begin() + 20, resp.begin() + 40);
+    printf("%p\n", resp->buf);
+
+    for (int i = 0; i < 20; i++) {
+        printf("0x%02x,", resp->buf[i]);
+    }
+    printf("\n");
 
 
     return true;

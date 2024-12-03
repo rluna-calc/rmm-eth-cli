@@ -13,10 +13,10 @@ Receiver::Receiver(int port, RxQueue* rxq) :
     _sock(-1),
     _stop(false),
     _is_running(false),
-    _q(rxq),
-    _buf_idx(0)
+    _q(rxq)
 {
-    memset(_buffer_pool, 0, NUM_BUFFER_POOL * BUFFER_SIZE);
+    memset(_elem.buf, 0, RX_BUFFER_SIZE);
+    _elem.len = 0;
 }
 
 Receiver::~Receiver() {
@@ -61,23 +61,25 @@ void Receiver::_run() {
 
     sockaddr_in sender_addr;
     socklen_t sender_addr_len = sizeof(sender_addr);
-    q_elem_t elem;
     while (!_stop) {
         _is_running = true;
 
-        // Get the receive buffer and increment index for next time
-        elem.buf = _buffer_pool[_buf_idx++];
-        _buf_idx = _buf_idx % NUM_BUFFER_POOL;
-
-        elem.len = recvfrom(_sock, elem.buf, BUFFER_SIZE, 0,
+        _elem.len = recvfrom(_sock, _elem.buf, RX_BUFFER_SIZE, 0,
                                         (struct sockaddr*)&sender_addr, &sender_addr_len);
-        if (elem.len < 20) {
+        if (_elem.len < 20) {
             // printf("Error receiving data \n");
             continue;
         }
 
-        _q->push(&elem);
-        printf("Received %d bytes from %s\n", elem.len, inet_ntoa(sender_addr.sin_addr));
+
+        _q->push(&_elem);
+        printf("Received %d bytes from %s\n", _elem.len, inet_ntoa(sender_addr.sin_addr));
+
+        printf("%p\n", _elem.buf);
+        for (int i = 0; i < 20; i++) {
+            printf("0x%02x,", _elem.buf[i]);
+        }
+        printf("\n");
     }
 
     _is_running = false;

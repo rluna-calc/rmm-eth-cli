@@ -6,8 +6,6 @@
 #include <thread>
 #include "rx_queue.h"
 
-constexpr uint32_t NUM_BUFFER_POOL = 16;
-constexpr uint32_t BUFFER_SIZE = 9000;
 
 struct Receiver {
     Receiver(int port, RxQueue* rxq);
@@ -27,9 +25,7 @@ struct Receiver {
     RxQueue* _q;
     std::thread _th;
 
-    uint8_t _buffer_pool[NUM_BUFFER_POOL][BUFFER_SIZE];
-    uint32_t _buf_idx;
-
+    q_elem_t _elem;
 };
 
 void send_udp_packet(const char* ip, int port, const uint8_t* buffer, const int len);

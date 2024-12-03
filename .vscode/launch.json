@@ -14,9 +14,9 @@
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
-            "externalConsole": false,
+            "externalConsole": true,
             "MIMode": "gdb",
-            "miDebuggerPath": "/usr/bin/gdb",
+            "miDebuggerPath": "/home/rluna/gdb",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",
