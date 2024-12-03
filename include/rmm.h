@@ -85,17 +85,12 @@ struct Rmm {
         bool stop = false;
         int32_t request_val = 1;
 
-        vector<file_t> new_files;
         while (!stop) {
-            request_val = _request_content_block(request_val, new_files);
+            request_val = _request_content_block(request_val);
             if (request_val == 0xff) {
                 stop = true;
             }
-
-            //TODO: files extend
         }    
-    
-        //TODO: save file list to member variable
     }
 
     void print_files() {
@@ -182,7 +177,7 @@ struct Rmm {
         }
     }
 
-    uint32_t _request_content_block(int32_t value, vector<file_t>& new_files) {
+    uint32_t _request_content_block(int32_t value) {
         uint8_t buf[sizeof(REQ_BLOCK_MSG)];
         uint32_t buf_len = sizeof(REQ_BLOCK_MSG);
 
@@ -193,35 +188,34 @@ struct Rmm {
 
         const q_elem_t* resp = wait_for_rx();
 
-        new_files = _parse_content_block(resp);
-        if (new_files.size() > 0) {
+        size_t old_size = _files.size();
+        _parse_content_block(resp);
+        size_t new_size = _files.size();
+
+        if (new_size > old_size) {
             value += 1;
         } else {
             value = 0xff;
         }
 
-        printf("files.size() = %d\n", new_files.size());
-        exit(1);
         return value;
     }
 
-    vector<file_t> _parse_content_block(const q_elem_t* resp) {
-        vector<file_t> new_files;
-
+    void _parse_content_block(const q_elem_t* resp) {
         bool searching_for_file = true;
         std::string filename = "";
         uint8_t* block = nullptr;
 
         file_t my_file;
 
-        printf("content block: \n");
-        print_buf(resp->buf, resp->len);
+        // printf("content block: \n");
+        // print_buf(resp->buf, resp->len);
 
         for(int32_t i = 0; i < resp->len; i++) {
             if (searching_for_file) {
                 if(!memcmp(&resp->buf[i], "File", 4)) {
                     block = (uint8_t*) &resp->buf[i];
-                    print_buf(block, 100);
+                    // print_buf(block, 100);
 
                     searching_for_file = false;
                     filename = (const char*) block;
@@ -232,13 +226,11 @@ struct Rmm {
                     memcpy(my_file.created, &block[80], 16);
                     my_file.created[16] = 0;
 
-                    new_files.push_back(my_file);
+                    _files.push_back(my_file);
                     searching_for_file = true;
                 }
             } 
         }
-
-        return new_files;
     }
 
     bool _get_identity() {
