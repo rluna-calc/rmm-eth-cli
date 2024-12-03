@@ -34,6 +34,14 @@ typedef struct {
     const char modnum;
 }rmm_info_t;
 
+typedef struct {
+    std::string filename;
+    uint64_t start_block;
+    uint64_t block_count;
+    uint64_t file_size;
+    char created[17];
+} file_t;
+
 template <
     typename UDP
 
@@ -77,7 +85,7 @@ struct Rmm {
         bool stop = false;
         int32_t request_val = 1;
 
-        vector<string> new_files;
+        vector<file_t> new_files;
         while (!stop) {
             request_val = _request_content_block(request_val, new_files);
             if (request_val == 0xff) {
@@ -174,7 +182,7 @@ struct Rmm {
         }
     }
 
-    uint32_t _request_content_block(int32_t value, vector<string>& new_files) {
+    uint32_t _request_content_block(int32_t value, vector<file_t>& new_files) {
         uint8_t buf[sizeof(REQ_BLOCK_MSG)];
         uint32_t buf_len = sizeof(REQ_BLOCK_MSG);
 
@@ -192,12 +200,43 @@ struct Rmm {
             value = 0xff;
         }
 
+        printf("files.size() = %d\n", new_files.size());
+        exit(1);
         return value;
     }
 
-    vector<string> _parse_content_block(const q_elem_t* resp) {
-        vector<string> new_files;
+    vector<file_t> _parse_content_block(const q_elem_t* resp) {
+        vector<file_t> new_files;
 
+        bool searching_for_file = true;
+        std::string filename = "";
+        uint8_t* block = nullptr;
+
+        file_t my_file;
+
+        printf("content block: \n");
+        print_buf(resp->buf, resp->len);
+
+        for(int32_t i = 0; i < resp->len; i++) {
+            if (searching_for_file) {
+                if(!memcmp(&resp->buf[i], "File", 4)) {
+                    block = (uint8_t*) &resp->buf[i];
+                    print_buf(block, 100);
+
+                    searching_for_file = false;
+                    filename = (const char*) block;
+
+                    my_file.start_block = _unpack64(&block[56]);
+                    my_file.block_count = _unpack64(&block[64]);
+                    my_file.file_size = _unpack64(&block[72]);
+                    memcpy(my_file.created, &block[80], 16);
+                    my_file.created[16] = 0;
+
+                    new_files.push_back(my_file);
+                    searching_for_file = true;
+                }
+            } 
+        }
 
         return new_files;
     }
@@ -221,6 +260,16 @@ struct Rmm {
         _model_number = _trim_end((char*) &resp->buf[94], 40);
         
         return true;
+    }
+
+    // Helper function to asseble big endian numbers
+    uint64_t _unpack64(uint8_t* buf) {
+        uint64_t num = 0;
+        for (int i = 0; i < 8; i++) {
+            num = (num << (8 * 1)) | (uint64_t) buf[i];
+        }
+
+        return num;
     }
 
     // Helper function to trim leading/trailing whitespaces
@@ -270,6 +319,7 @@ struct Rmm {
 
     std::string _serial_number;
     std::string _model_number;
+    std::vector<file_t> _files;
 };
 
 #endif
