@@ -173,27 +173,51 @@ struct Rmm {
             return false;
         }
 
-        printf("Ready to parse response...%d bytes\n", resp->len);
-        print_buf(resp->buf, resp->len);
-
         // Extract serial number (bytes 20-40)
-        std::vector<uint8_t> serial_number_bytes(&resp->buf[20], &resp->buf[40]);
-        // Find the null byte and trim
-        auto null_pos = std::find(serial_number_bytes.begin(), serial_number_bytes.end(), 0);
-        serial_number_bytes.resize(null_pos - serial_number_bytes.begin());
-
-        // Convert to string and trim leading/trailing whitespace
-        _serial_number = _trim(std::string(serial_number_bytes.begin(), serial_number_bytes.end()));
-
+        _serial_number = _trim_end((char*) &resp->buf[50], 25);
+        _model_number = _trim_end((char*) &resp->buf[94], 40);
+        
         return true;
     }
 
     // Helper function to trim leading/trailing whitespaces
-    std::string _trim(const std::string& str) {
-        const auto first = str.find_first_not_of(" \t\r\n");
-        if (first == std::string::npos) return ""; // No content
-        const auto last = str.find_last_not_of(" \t\r\n");
-        return str.substr(first, last - first + 1);
+    const char* _trim_end(char* p, uint32_t max_len) {
+        char* ret = nullptr;
+        
+        enum {
+            INITIAL,
+            IN_FIRST_NULL,
+            IN_TEXT,
+            FOUND_LAST_NULL,
+            FINISHED,
+        } state;
+
+        state = INITIAL;
+
+        for (uint32_t i = 0; i < max_len; i++) {
+            switch(state) {
+                case INITIAL: 
+                    state = ((*p == 0) || (*p == 0x20)) ? IN_FIRST_NULL : INITIAL;
+                    break;
+                case IN_FIRST_NULL: 
+                    state = ((*p == 0) || (*p == 0x20)) ? IN_FIRST_NULL : IN_TEXT;
+                    break;
+                case IN_TEXT: 
+                    state = (*p == 0) ? FINISHED : IN_TEXT;
+                    break;
+                default:
+                    break;
+            }
+
+            if(state == FINISHED) {
+                ret = ++p;
+                break;
+            }
+
+            p--; 
+        }
+
+        return (const char*) ret;
     }
 
     bool _is_ready;
