@@ -21,6 +21,9 @@ constexpr uint32_t DISCOVER_SIZE = 8548;
 const uint8_t IDENTITY_MSG[] = {0x00,0x05,0x00,0x01,0x00,
                                 0x00,0x00,0x00,0x00,0x00};
 
+const uint8_t REQ_BLOCK_MSG[] = {0x00,0x03,0x00,0x01,0x00,
+                                 0x00,0x00,0x00,0x00,0x00};
+
 constexpr uint32_t BUFFER_POOL_SIZE = 32;
 
 using namespace std;
@@ -71,8 +74,20 @@ struct Rmm {
     }
 
     void read_contents() {
-        // // Simulate reading file contents
-        // file_names = {"File1", "File2", "File3"};
+        bool stop = false;
+        int32_t request_val = 1;
+
+        vector<string> new_files;
+        while (!stop) {
+            request_val = _request_content_block(request_val, new_files);
+            if (request_val == 0xff) {
+                stop = true;
+            }
+
+            //TODO: files extend
+        }    
+    
+        //TODO: save file list to member variable
     }
 
     void print_files() {
@@ -157,6 +172,34 @@ struct Rmm {
         for (size_t i = 0; i < _rx.size(); i++) {
             _rx[i]->start();
         }
+    }
+
+    uint32_t _request_content_block(int32_t value, vector<string>& new_files) {
+        uint8_t buf[sizeof(REQ_BLOCK_MSG)];
+        uint32_t buf_len = sizeof(REQ_BLOCK_MSG);
+
+        memcpy(buf, REQ_BLOCK_MSG, buf_len);
+        buf[buf_len-1] = value;
+
+        UDP::send_udp_packet(TX_IP, PORT_252, buf, buf_len);
+
+        const q_elem_t* resp = wait_for_rx();
+
+        new_files = _parse_content_block(resp);
+        if (new_files.size() > 0) {
+            value += 1;
+        } else {
+            value = 0xff;
+        }
+
+        return value;
+    }
+
+    vector<string> _parse_content_block(const q_elem_t* resp) {
+        vector<string> new_files;
+
+
+        return new_files;
     }
 
     bool _get_identity() {

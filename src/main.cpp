@@ -77,7 +77,7 @@ int main(int argc, char** argv) {
     // Register signal handler for graceful shutdown
     std::signal(SIGINT, signal_handler);
 
-    printf("Starting UDP RMM Downloader\n");
+    // printf("Starting UDP RMM Downloader\n");
     parse_arguments(argc, argv);
 
     if (_args.help) {
