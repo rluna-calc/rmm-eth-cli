@@ -23,8 +23,6 @@ bool RxQueue::push(q_elem_t* new_elem) {
         _buf[_head].len = new_elem->len;
         _num_elems++;
         _head = _wrap(_head+1);
-        printf("new_elem.buf = %p, _head: buf = %p\n", new_elem->buf, _buf[_head-1].buf);
-        printf("_head = %d, _tail = %d\n\n", _head, _tail);
         ret = true;
     }
 
@@ -39,8 +37,6 @@ q_elem_t* RxQueue::get() {
         ret = &_buf[_tail++];
         _num_elems--;
         _tail = _wrap(_tail);
-        printf("ret.buf = %p, _head: buf = %p\n", ret->buf, _buf[_head-1].buf);
-        printf("_head = %d, _tail = %d\n\n", _head, _tail);
     }
 
     return ret;

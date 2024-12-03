@@ -161,7 +161,7 @@ struct Rmm {
 
     bool _get_identity() {
         const uint8_t* buf = IDENTITY_MSG;
-        printf("Sending discovery message...\n");
+        // printf("Sending discovery message...\n");
         UDP::send_udp_packet(TX_IP, PORT_BROADCAST, buf, sizeof(IDENTITY_MSG));
 
         const q_elem_t* resp = wait_for_rx();

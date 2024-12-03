@@ -57,7 +57,7 @@ void UdpTxRx::_run() {
         throw std::runtime_error("Failed to bind socket.");
     }
 
-    printf("Listening for UDP packets on port %d ... \n", _port);
+    // printf("Listening for UDP packets on port %d ... \n", _port);
 
     sockaddr_in sender_addr;
     socklen_t sender_addr_len = sizeof(sender_addr);
@@ -73,7 +73,7 @@ void UdpTxRx::_run() {
 
 
         _q->push(&_elem);
-        printf("Received %d bytes from %s\n", _elem.len, inet_ntoa(sender_addr.sin_addr));
+        // printf("Received %d bytes from %s\n", _elem.len, inet_ntoa(sender_addr.sin_addr));
 
         // Debug print buf
         // print_buf(_elem.buf, _elem.len);
@@ -81,7 +81,7 @@ void UdpTxRx::_run() {
 
     _is_running = false;
     _close_socket();
-    printf("Finished listening on port %d\n", _port);
+    // printf("Finished listening on port %d\n", _port);
 }
 
 void UdpTxRx::_close_socket() {
@@ -121,7 +121,7 @@ void UdpTxRx::send_udp_packet(const char* ip, int port, const uint8_t* buffer, c
     if (sent_bytes < 0) {
         printf("Failed to send packet\n");
     } else {
-        printf("Sent %d bytes to %s:%d\n", sent_bytes, ip, port);
+        // printf("Sent %d bytes to %s:%d\n", sent_bytes, ip, port);
     }
 
     close(sock);

@@ -91,15 +91,20 @@ int main(int argc, char** argv) {
     rmm.wait_for_ready();
     bool rmm_found = rmm.search();
 
-    if (!rmm_found) {
+    if (rmm_found) {
+        printf("SerialNumber: %s\n", rmm._serial_number.c_str());
+        printf("ModelNumber: %s\n", rmm._model_number.c_str());
+    } else {
         printf("ERROR: RMM was not found\n");
+    }
+
+    if (_args.list) {
+        rmm.read_contents();
+        rmm.print_files();
     }
 
 
     printf("Waiting to exit...\n");
-    // std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-    
-    // rmm.stop_all();
     rmm.wait_for_threads();
     
     printf("Exiting.\n");
