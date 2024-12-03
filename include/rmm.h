@@ -80,11 +80,28 @@ struct Rmm {
         return _get_identity();
     }
 
-    void download(const char* filename) {
-        std::cout << "Downloading file: " << filename << std::endl;
-        // Simulate downloading a file (this could be expanded)
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-        std::cout << "Download complete for: " << filename << std::endl;
+    void download(std::string filename) {
+        read_contents();
+        int32_t dl_idx = -1;
+
+        for (size_t i = 0; i < _files.size(); i++) {
+            if( _files[i].filename == filename ) {
+                dl_idx = (int32_t) i;
+                break;
+            }
+        }
+
+        if( dl_idx < 0) {
+            printf("File not found.\n");
+            return;
+        }
+
+        printf("Downloading file: %s\n", _files[dl_idx].filename.c_str());
+
+        //create dlt
+        //dlt.start()
+        //wait for dlt to have started
+
     }
 
     void read_contents() {
@@ -139,19 +156,6 @@ struct Rmm {
         strout += "Filename    StartBlock      BlockCount     Size           Created";
         cout << strout << endl;
 
-
-
-        // long long number = 1234567890; // Large number
-
-        // // Set the locale to the user's default locale
-        // std::locale loc(""); // Empty string uses the global/default locale
-        // std::stringstream ss;
-        // ss.imbue(loc);  // Apply the locale to the stringstream
-        // ss << std::fixed << number;  // Output the number with commas
-        // ss.q
-        // // Print the formatted number
-        // std::cout << "Formatted number with commas: " << ss.str() << std::endl;
-
         char dtstr[20];
         _date_string_template(dtstr);
 
@@ -163,12 +167,6 @@ struct Rmm {
             
             _date_string_update(dtstr, f.created);
             cout <<  setw(23) << right << dtstr;
-            // Format the 'created' timestamp into the desired format
-            // std::tm tm = datetimestr_to_obj(f.created);
-            // char time_buf[20];
-            // std::strftime(time_buf, sizeof(time_buf), "%m/%d/%Y %H:%M:%S", &tm);
-            // strout += " " + std::string(time_buf);
-            // strout += "\n";
             cout << endl;
         }
     }
@@ -222,16 +220,16 @@ struct Rmm {
             }
         }
 
-        q_elem_t* wait_for_rx() {
+    q_elem_t* wait_for_rx() {
         q_elem_t* elem = nullptr;
         
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 100; i++) {
             elem = _rxq->get();
             if (elem) {
                 break;
             }
 
-            this_thread::sleep_for(chrono::milliseconds(100));
+            this_thread::sleep_for(chrono::milliseconds(10));
         }
 
         return elem;

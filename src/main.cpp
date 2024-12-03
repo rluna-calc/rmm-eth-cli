@@ -110,7 +110,7 @@ int main(int argc, char** argv) {
 
     }
     else if (_args.file != "" && _args.dest != "") {
-        
+        rmm.download(_args.file);
     }
     else {
         printf("Invalid arguments\n");
