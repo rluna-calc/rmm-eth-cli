@@ -7,6 +7,12 @@
 #include <cstring>
 #include <vector>
 #include <algorithm>
+
+#include <iostream>
+#include <iomanip>      // For std::setlocale
+#include <locale>       // For std::locale, std::use_facet
+#include <sstream>      // For std::stringstream
+
 #include "udp_utils.h"
 #include "rx_queue.h"
 #include "print_utils.h"
@@ -93,26 +99,78 @@ struct Rmm {
         }    
     }
 
+    void _date_string_template(char* str) {
+        sprintf(str, "01/01/2019 00:01:08");
+        str[19] = 0;
+    }
+
+    void _date_string_update(char* out, const char* in) {
+        // Month
+        out[0] = in[2];
+        out[1] = in[3];
+
+        // Day
+        out[3] = in[0];
+        out[4] = in[1];
+
+        // Year
+        out[6] = in[4];
+        out[7] = in[5];
+        out[8] = in[6];
+        out[9] = in[7];
+
+        // Hour
+        out[11] = in[8];
+        out[12] = in[9];
+
+        // Minute
+        out[14] = in[10];
+        out[15] = in[11];
+
+        // Second
+        out[17] = in[12];
+        out[18] = in[13];
+
+        out[19] = 0;
+    }
+
     void print_files() {
         std::string strout = "Files on RMM:\n\n";
-        strout += "Filename    StartBlock      BlockCount     Size           Created\n";
+        strout += "Filename    StartBlock      BlockCount     Size           Created";
+        cout << strout << endl;
+
+
+
+        // long long number = 1234567890; // Large number
+
+        // // Set the locale to the user's default locale
+        // std::locale loc(""); // Empty string uses the global/default locale
+        // std::stringstream ss;
+        // ss.imbue(loc);  // Apply the locale to the stringstream
+        // ss << std::fixed << number;  // Output the number with commas
+        // ss.q
+        // // Print the formatted number
+        // std::cout << "Formatted number with commas: " << ss.str() << std::endl;
+
+        char dtstr[20];
+        _date_string_template(dtstr);
 
         for (const auto& f : _files) {
-            strout += " " + f.filename;
-            strout += " " + std::to_string(f.start_block);
-            strout += " " + std::to_string(f.block_count);
-            strout += " " + std::to_string(f.file_size);
-
+            cout << setw(12) << left << " " + f.filename;
+            cout << setw(12) << right << to_string(f.start_block);
+            cout << setw(12) << right << to_string(f.block_count);
+            cout << setw(12) << right << to_string(f.file_size);
+            
+            _date_string_update(dtstr, f.created);
+            cout <<  setw(23) << right << dtstr;
             // Format the 'created' timestamp into the desired format
             // std::tm tm = datetimestr_to_obj(f.created);
             // char time_buf[20];
             // std::strftime(time_buf, sizeof(time_buf), "%m/%d/%Y %H:%M:%S", &tm);
             // strout += " " + std::string(time_buf);
-            strout + "\n";
+            // strout += "\n";
+            cout << endl;
         }
-
-        // Log the output (std::cout for simplicity)
-        std::cout << strout << std::endl;
     }
 
     bool tasks_pending() {

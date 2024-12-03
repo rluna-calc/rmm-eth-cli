@@ -94,3 +94,12 @@ TEST(Rmm, ParseContent) {
     EXPECT_EQ(rmm._files[0].file_size, 4287436432);
     EXPECT_TRUE( !memcmp(rmm._files[0].created, "0101201900010800", 16) );
 }
+
+TEST(Rmm, PrintFiles) {
+    rmm_t rmm;
+
+    q_elem_t elem = get_content_response(0);
+    rmm._parse_content_block(&elem);
+    
+    rmm.print_files();
+}
