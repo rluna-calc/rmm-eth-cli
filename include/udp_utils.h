@@ -7,9 +7,9 @@
 #include "rx_queue.h"
 
 
-struct Receiver {
-    Receiver(int port, RxQueue* rxq);
-    ~Receiver();
+struct UdpTxRx {
+    UdpTxRx(int port, RxQueue* rxq);
+    ~UdpTxRx();
 
     void start();
     void stop() { _stop = true; }
@@ -17,6 +17,8 @@ struct Receiver {
 
     void _run();
     void _close_socket();
+
+    static void send_udp_packet(const char* ip, int port, const uint8_t* buffer, const int len);
 
     int _port;
     int _sock;
@@ -28,6 +30,5 @@ struct Receiver {
     q_elem_t _elem;
 };
 
-void send_udp_packet(const char* ip, int port, const uint8_t* buffer, const int len);
 
 #endif

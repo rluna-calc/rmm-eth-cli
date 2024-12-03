@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include "print_utils.h"
 
-Receiver::Receiver(int port, RxQueue* rxq) :
+UdpTxRx::UdpTxRx(int port, RxQueue* rxq) :
     _port(port),
     _sock(-1),
     _stop(false),
@@ -19,15 +19,15 @@ Receiver::Receiver(int port, RxQueue* rxq) :
     _elem.len = 0;
 }
 
-Receiver::~Receiver() {
+UdpTxRx::~UdpTxRx() {
     _close_socket();
 }
 
-void Receiver::start() {
-    _th = std::thread(&Receiver::_run, this);
+void UdpTxRx::start() {
+    _th = std::thread(&UdpTxRx::_run, this);
 }
 
-void Receiver::_run() {
+void UdpTxRx::_run() {
     _sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (_sock < 0) {
         throw std::runtime_error("Failed to create socket.");
@@ -84,7 +84,7 @@ void Receiver::_run() {
     printf("Finished listening on port %d\n", _port);
 }
 
-void Receiver::_close_socket() {
+void UdpTxRx::_close_socket() {
     if (_sock != -1) {
         close(_sock);
         _sock = -1;
@@ -93,7 +93,7 @@ void Receiver::_close_socket() {
 
 
 // Function to send a UDP packet to a given IP and port
-void send_udp_packet(const char* ip, int port, const uint8_t* buffer, const int len) {
+void UdpTxRx::send_udp_packet(const char* ip, int port, const uint8_t* buffer, const int len) {
     // Create socket
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {

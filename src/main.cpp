@@ -16,7 +16,7 @@
 std::vector<std::string> file_names;
 std::string download_path;
 
-using rmm_t = Rmm<Receiver>;
+using rmm_t = Rmm<UdpTxRx>;
 
 rmm_t* _rmm = nullptr;
 

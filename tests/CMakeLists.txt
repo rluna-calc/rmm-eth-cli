@@ -17,6 +17,8 @@ enable_testing()
 add_executable(
     test_downloader
     downloader_test.cc
+    ../src/rx_queue.cpp
+    ../src/print_utils.cpp
  )
 
 #  target_include_directories(
@@ -28,6 +30,7 @@ add_executable(
 target_link_libraries(
   test_downloader
   gtest
+  gmock
   gtest_main
   # GTest::gtest_main
 )

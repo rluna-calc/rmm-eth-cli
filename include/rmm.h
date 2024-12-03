@@ -29,7 +29,10 @@ typedef struct {
     const char modnum;
 }rmm_info_t;
 
-template <typename RX>
+template <
+    typename UDP
+
+>
 struct Rmm {
     Rmm() : _is_ready(false), _stop(false) {
         _serial_number = "";
@@ -37,8 +40,8 @@ struct Rmm {
 
         _rxq = new RxQueue(BUFFER_POOL_SIZE);
 
-        _rx.push_back(new Receiver(PORT_252, _rxq));
-        _rx.push_back(new Receiver(PORT_BROADCAST, _rxq));
+        _rx.push_back(new UDP(PORT_252, _rxq));
+        _rx.push_back(new UDP(PORT_BROADCAST, _rxq));
 
         _start();
     }
@@ -145,7 +148,7 @@ struct Rmm {
     void _send_jumbo_zeros() {
         uint8_t buf[DISCOVER_SIZE];
         memset(buf, 0, DISCOVER_SIZE);
-        send_udp_packet(TX_IP, PORT_253, buf, DISCOVER_SIZE);
+        UDP::send_udp_packet(TX_IP, PORT_253, buf, DISCOVER_SIZE);
     }
 
     void _start() {
@@ -157,7 +160,7 @@ struct Rmm {
     bool _get_identity() {
         const uint8_t* buf = IDENTITY_MSG;
         printf("Sending discovery message...\n");
-        send_udp_packet(TX_IP, PORT_BROADCAST, buf, sizeof(IDENTITY_MSG));
+        UDP::send_udp_packet(TX_IP, PORT_BROADCAST, buf, sizeof(IDENTITY_MSG));
 
         const q_elem_t* resp = wait_for_rx();
         return _parse_identity_response(resp);
@@ -186,7 +189,7 @@ struct Rmm {
 
     bool _is_ready;
     bool _stop;
-    std::vector<RX*> _rx;
+    std::vector<UDP*> _rx;
     RxQueue* _rxq;
 
     std::string _serial_number;
