@@ -285,7 +285,6 @@ struct Rmm {
             if (searching_for_file) {
                 if(!memcmp(&resp->buf[i], "File", 4)) {
                     block = (uint8_t*) &resp->buf[i];
-                    print_buf(block, 10);
 
                     searching_for_file = false;
                     my_file.filename = (const char*) block;
