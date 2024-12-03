@@ -94,10 +94,25 @@ struct Rmm {
     }
 
     void print_files() {
-        // std::cout << "Files on RMM:" << std::endl;
-        // for (const auto& file : file_names) {
-        //     std::cout << "  " << file << std::endl;
-        // }
+        std::string strout = "Files on RMM:\n\n";
+        strout += std::string(12, ' ') + "Filename    StartBlock      BlockCount     Size           Created\n";
+
+        for (const auto& f : _files) {
+            strout += " " + f.filename;
+            strout += " " + std::to_string(f.start_block);
+            strout += " " + std::to_string(f.block_count);
+            strout += " " + std::to_string(f.file_size);
+
+            // Format the 'created' timestamp into the desired format
+            // std::tm tm = datetimestr_to_obj(f.created);
+            // char time_buf[20];
+            // std::strftime(time_buf, sizeof(time_buf), "%m/%d/%Y %H:%M:%S", &tm);
+            // strout += " " + std::string(time_buf);
+            strout + "\n";
+        }
+
+        // Log the output (std::cout for simplicity)
+        std::cout << strout << std::endl;
     }
 
     bool tasks_pending() {
