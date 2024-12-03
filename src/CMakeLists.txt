@@ -6,6 +6,7 @@ add_executable(
     main.cpp
     udp_utils.cpp
     rx_queue.cpp
+    download_tracker.cpp
     print_utils.cpp
 )
 

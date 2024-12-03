@@ -16,6 +16,7 @@
 #include "udp_utils.h"
 #include "rx_queue.h"
 #include "print_utils.h"
+#include "download_tracker.h"
 
 const char* TX_IP = "192.168.0.255";
 constexpr uint32_t PORT_252 = 252;
@@ -40,17 +41,8 @@ typedef struct {
     const char modnum;
 }rmm_info_t;
 
-typedef struct {
-    std::string filename;
-    uint64_t start_block;
-    uint64_t block_count;
-    uint64_t file_size;
-    char created[17];
-} file_t;
-
 template <
     typename UDP
-
 >
 struct Rmm {
     Rmm() : _is_ready(false), _stop(false) {
