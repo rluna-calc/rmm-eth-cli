@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <time_utils.h>
+#include <chrono>
+#include <thread>
 
 RxQueue::RxQueue(int size) {
     q_elem_t elem = {0};
@@ -55,6 +57,7 @@ q_elem_t* RxQueue::get_with_timeout_ms(uint32_t timeout_ms) {
         if(elem) {
             break;
         }
+        std::this_thread::sleep_for(std::chrono::microseconds(100));
         time_now = time_since_eqoch_microsecs();
     }
 

@@ -8,8 +8,8 @@
 constexpr uint32_t REPORT_COUNT = 1000;
 
 constexpr uint32_t PAYLOAD_START = 10;
-constexpr uint32_t BLOCK_BYTES = 51;
-constexpr uint32_t RX_BLOCKS = 1;
+constexpr uint32_t BLOCK_BYTES = 512;
+constexpr uint32_t RX_BLOCKS = 16;
 constexpr uint32_t RX_BYTES = BLOCK_BYTES * RX_BLOCKS;
 
 constexpr uint32_t NUM_SEGMENTS = 16;
@@ -40,11 +40,11 @@ void DownloadTracker::_reset_segments() {
 }
 
 void DownloadTracker::start() {
-    _th_process = std::thread(&DownloadTracker::_run_process, this);
-    _wait_for_process_ready();
-
     _th_write = std::thread(&DownloadTracker::_run_write, this);
     _wait_for_file_ready();
+
+    _th_process = std::thread(&DownloadTracker::_run_process, this);
+    _wait_for_process_ready();
 
     _th_request = std::thread(&DownloadTracker::_run_request, this);
 }
@@ -63,11 +63,11 @@ void DownloadTracker::_run_request() {
 
         // TODO: maybe use a CV to avoid a spin loop?
         if( _num_active_requests < MAX_NUM_ACTIVE_REQUESTS ) {
-            _cb_request_block(_current_block); // move to download thread
+            // printf("%d: current_block request = %llu\n", __LINE__, _current_block);
+            _cb_request_block(_current_block);
             _num_active_requests++;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-
+        std::this_thread::sleep_for(std::chrono::microseconds(1));
     }
 
     printf("Request thread finished\n");
@@ -85,11 +85,16 @@ void DownloadTracker::_run_process() {
 
     _is_process_ready = true;
     q_elem_t* elem;
+    printf("dlt _rxq = %p\n", _rxq);
     while( !(_stop || _stop_requesting) ) {
+        _reset_segments();
         for(int i = 0; i < NUM_SEGMENTS; i++) {    
-            elem = _rxq->get_with_timeout_ms(100);
+            elem = _rxq->get_with_timeout_ms(200);
             if(elem) {
                 ok_block_increment = _process_segment(elem);
+                printf("%llu: %d: num_elems = %d, chunk_size = %d, ok_inc = %d\n", time_since_eqoch_microsecs(), __LINE__, 
+                    _rxq->_num_elems, _chunk_size, ok_block_increment);
+
                 if (ok_block_increment) {
                     break;
                 }
@@ -125,6 +130,7 @@ bool DownloadTracker::_check_segment(bool do_increment) {
         }
         else { 
             _increment_block();
+            _num_active_requests--; //TODO: move to write thread
         }
     }
 

@@ -73,6 +73,7 @@ void UdpTxRx::_run() {
 
 
         _q->push(&_elem);
+        // printf("%d: queue_num_elems = %d, %d bytes added\n", __LINE__, _q->_num_elems, _elem.len);
         // printf("Received %d bytes from %s\n", _elem.len, inet_ntoa(sender_addr.sin_addr));
 
         // Debug print buf

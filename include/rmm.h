@@ -17,6 +17,7 @@
 #include "rx_queue.h"
 #include "print_utils.h"
 #include "download_tracker.h"
+#include "time_utils.h"
 
 const char* TX_IP = "192.168.0.255";
 constexpr uint32_t PORT_252 = 252;
@@ -111,8 +112,7 @@ struct Rmm {
         buf[REQUEST_LEN-3] = (uint8_t) ((block_num>>16) & 0xFF);
         buf[REQUEST_LEN-4] = (uint8_t) ((block_num>>24) & 0xFF);
 
-        printf("Requesting block %llu\n", block_num);
-        print_buf(buf, REQUEST_LEN);
+        printf("%llu: %d: Requesting block %llu\n", time_since_eqoch_microsecs(), __LINE__, block_num);
         UDP::send_udp_packet(TX_IP, PORT_252, buf, REQUEST_LEN);
     }
 
