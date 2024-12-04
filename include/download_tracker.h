@@ -42,7 +42,8 @@ struct DownloadTracker {
     bool _process_segment(q_elem_t* elem);
     void _increment_block();
     bool _check_segment(bool do_increment);
-    void _do_reporting();
+    bool _do_reporting(int64_t* prev_time, int64_t* prev_bytes);
+    void _get_time_str(float time_remaining, std::string& time_str);
 
     file_t _f;
     RxQueue* _rxq;

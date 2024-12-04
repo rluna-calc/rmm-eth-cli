@@ -7,7 +7,7 @@ int64_t time_since_epoch_seconds() {
     return seconds_since_epoch;
 }
 
-int64_t time_since_eqoch_microsecs() {
+int64_t time_since_epoch_microsecs() {
      auto now = std::chrono::system_clock::now();
     auto microseconds_since_epoch = std::chrono::duration_cast<std::chrono::microseconds>(now.time_since_epoch()).count();
     return microseconds_since_epoch;

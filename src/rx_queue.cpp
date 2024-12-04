@@ -47,7 +47,7 @@ q_elem_t* RxQueue::get() {
 
 q_elem_t* RxQueue::get_with_timeout_ms(uint32_t timeout_ms) {
 
-    uint64_t start_time = time_since_eqoch_microsecs();
+    uint64_t start_time = time_since_epoch_microsecs();
     uint64_t end_time = timeout_ms * 1000;
     
     uint64_t time_now = 0;
@@ -58,7 +58,7 @@ q_elem_t* RxQueue::get_with_timeout_ms(uint32_t timeout_ms) {
             break;
         }
         std::this_thread::sleep_for(std::chrono::microseconds(100));
-        time_now = time_since_eqoch_microsecs();
+        time_now = time_since_epoch_microsecs();
     }
 
     return elem;

@@ -112,7 +112,7 @@ struct Rmm {
         buf[REQUEST_LEN-3] = (uint8_t) ((block_num>>16) & 0xFF);
         buf[REQUEST_LEN-4] = (uint8_t) ((block_num>>24) & 0xFF);
 
-        printf("%llu: %d: Requesting block %llu\n", time_since_eqoch_microsecs(), __LINE__, block_num);
+        printf("%llu: %d: Requesting block %llu\n", time_since_epoch_microsecs(), __LINE__, block_num);
         UDP::send_udp_packet(TX_IP, PORT_252, buf, REQUEST_LEN);
     }
 
@@ -235,9 +235,15 @@ struct Rmm {
 
     void wait_for_threads() {
         if( _dlt ) {
-            _dlt->_th_process.join();
-            _dlt->_th_request.join();
-            _dlt->_th_write.join();
+            if( _dlt->_th_process.joinable() ) {
+                _dlt->_th_process.join();
+            }
+            if( _dlt->_th_request.joinable() ) {
+                _dlt->_th_request.join();
+            }
+            if( _dlt->_th_write.joinable() ) {
+                _dlt->_th_write.join();
+            }
         }
 
         for (size_t i = 0; i < _rx.size(); i++) {

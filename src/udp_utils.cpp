@@ -61,6 +61,7 @@ void UdpTxRx::_run() {
 
     sockaddr_in sender_addr;
     socklen_t sender_addr_len = sizeof(sender_addr);
+    bool q_ret = false;
     while (!_stop) {
         _is_running = true;
 
@@ -72,7 +73,10 @@ void UdpTxRx::_run() {
         }
 
 
-        _q->push(&_elem);
+        q_ret = _q->push(&_elem);
+        if( !q_ret ) {
+            printf("QUEUE FULL!\n");
+        }
         // printf("%d: queue_num_elems = %d, %d bytes added\n", __LINE__, _q->_num_elems, _elem.len);
         // printf("Received %d bytes from %s\n", _elem.len, inet_ntoa(sender_addr.sin_addr));
 

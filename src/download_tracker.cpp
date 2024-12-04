@@ -1,6 +1,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <chrono>
+#include <sstream>
+#include <iomanip>
 #include "print_utils.h"
 #include "time_utils.h"
 #include "download_tracker.h"
@@ -40,12 +42,9 @@ void DownloadTracker::_reset_segments() {
 }
 
 void DownloadTracker::start() {
+    _stop = false;
     _th_write = std::thread(&DownloadTracker::_run_write, this);
-    _wait_for_file_ready();
-
     _th_process = std::thread(&DownloadTracker::_run_process, this);
-    _wait_for_process_ready();
-
     _th_request = std::thread(&DownloadTracker::_run_request, this);
 }
 
@@ -55,6 +54,9 @@ bool DownloadTracker::get_is_stopped() {
 
 void DownloadTracker::_run_request() {
     printf("Request thread started\n");
+
+    _wait_for_file_ready();
+    _wait_for_process_ready();
 
     _reset_segments();
     _flush_rx_queue();
@@ -67,18 +69,18 @@ void DownloadTracker::_run_request() {
             _cb_request_block(_current_block);
             _num_active_requests++;
         }
-        std::this_thread::sleep_for(std::chrono::microseconds(1));
+        std::this_thread::sleep_for(std::chrono::microseconds(10));
     }
 
-    printf("Request thread finished\n");
+    printf("Request thread finished, stop_requesting = %d, stop = %d\n", _stop_requesting, _stop);
 }
 
 void DownloadTracker::_run_process() {
     printf("Process thread started\n");
 
     int32_t num_retries = 0;
-    uint64_t bytes_prev = 0;
-    int64_t time_prev = 0;
+    int64_t prev_bytes = 0;
+    int64_t prev_time = 0;
     bool ok_block_increment = false;
 
     int64_t start_time = time_since_epoch_seconds();
@@ -86,13 +88,18 @@ void DownloadTracker::_run_process() {
     _is_process_ready = true;
     q_elem_t* elem;
     printf("dlt _rxq = %p\n", _rxq);
+    uint32_t segment_counter = 0;
     while( !(_stop || _stop_requesting) ) {
         _reset_segments();
-        for(int i = 0; i < NUM_SEGMENTS; i++) {    
+        segment_counter = 0;
+        
+        while (segment_counter < NUM_SEGMENTS) {
+        // for(uint32_t i = 0; i < NUM_SEGMENTS; i++) {    
             elem = _rxq->get_with_timeout_ms(200);
             if(elem) {
+                segment_counter++;
                 ok_block_increment = _process_segment(elem);
-                printf("%llu: %d: num_elems = %d, chunk_size = %d, ok_inc = %d\n", time_since_eqoch_microsecs(), __LINE__, 
+                printf("%llu: %d: num_elems = %d, chunk_size = %d, ok_inc = %d\n", time_since_epoch_microsecs(), __LINE__, 
                     _rxq->_num_elems, _chunk_size, ok_block_increment);
 
                 if (ok_block_increment) {
@@ -100,23 +107,23 @@ void DownloadTracker::_run_process() {
                 }
             }
             else {
-                printf("RX queue empty on segment %d\n", i);
-                break;
+                printf("RX queue empty on segment %d\n", segment_counter);
+                // break;
                 // exit(1);
             }
         }
 
         _stop_requesting = _check_segment(ok_block_increment); // break; if true
         
-        if (_block_count % REPORT_COUNT == 0) {
-            _do_reporting();
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-
+        // if (_block_count % REPORT_COUNT == 0) {
+            // _stop_requesting = _do_reporting(&prev_time, &prev_bytes);
+            // _do_reporting(&prev_time, &prev_bytes);
+        // }
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 
     _is_process_ready = false;
-    printf("Process thread finished\n");
+    printf("Process thread finished, stop_requesting = %d, stop = %d\n", _stop_requesting, _stop);
 }
 
 bool DownloadTracker::_check_segment(bool do_increment) {
@@ -137,9 +144,60 @@ bool DownloadTracker::_check_segment(bool do_increment) {
     return is_finished;
 }
 
-void DownloadTracker::_do_reporting() {
+bool DownloadTracker::_do_reporting(int64_t* prev_time, int64_t* prev_bytes) {
+    printf("%d\n", __LINE__);
+    int64_t time_now = time_since_epoch_microsecs();
+    printf("%d\n", __LINE__);
 
+    int64_t bytes_now = _block_count * BLOCK_BYTES;
+    float rate = (float)(bytes_now - *prev_bytes) / (float)(time_now - *prev_time);
+    printf("%d\n", __LINE__);
+
+    bool end_now = true;
+    int64_t bytes_remaining = _f.file_size - bytes_now;
+    printf("%d\n", __LINE__);
+
+    float time_remaining = -1.0;
+    std::string remaining_str = "infinity";
+    if (rate > 0) {
+        time_remaining = bytes_remaining / rate;
+        _get_time_str(time_remaining, remaining_str);
+        end_now = false;
+    }
+    printf("%d\n", __LINE__);
+
+    if (*prev_time > 0) {
+        printf("%.1f GB of %.1f GB at ==> ", (float)bytes_now/1.e9, (float)_f.file_size/1.e9);
+        printf("%.2f MB/s | %s\n", rate/1.e6, remaining_str.c_str());
+    }
+    printf("%d\n", __LINE__);
+
+    *prev_time = time_now;
+    *prev_bytes = bytes_now;
+    printf("%d\n", __LINE__);
+
+    return end_now;
 }
+
+void DownloadTracker::_get_time_str(float seconds, std::string& time_str) {
+
+    std::ostringstream stream;
+    if( seconds >= 3600. ) {
+        float hours = seconds / 3600.;
+        stream << std::fixed << std::setprecision(2) << hours << " hrs";
+        time_str = stream.str();
+    }
+    else if( seconds >= 60. ) {
+        float minutes = seconds / 60.;
+        stream << std::fixed << std::setprecision(1) << minutes << " mins";
+        time_str = stream.str();
+    }
+    else {
+        stream << std::fixed << std::setprecision(1) << seconds << " secs";
+        time_str = stream.str();
+    }
+}
+
 
 void DownloadTracker::_increment_block() {
     uint64_t increment_value = (1 << 8);
@@ -184,7 +242,7 @@ void DownloadTracker::_run_write() {
     }
 
     _is_file_ready = false;
-    printf("Write thread finished\n");
+    printf("Write thread finished, _stop = %d\n", _stop);
 }
 
 void DownloadTracker::_flush_rx_queue() {
