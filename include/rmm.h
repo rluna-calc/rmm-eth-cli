@@ -45,7 +45,11 @@ template <
     typename UDP
 >
 struct Rmm {
-    Rmm() : _is_ready(false), _stop(false) {
+    Rmm() : 
+    _is_ready(false), 
+    _stop(false),
+    _dlt(nullptr)
+    {
         _serial_number = "";
         _model_number = "";
 
@@ -65,6 +69,9 @@ struct Rmm {
         }
 
         delete _rxq;
+        if( _dlt ) {
+            delete _dlt;
+        }
     }
     
     bool search() {
@@ -74,15 +81,8 @@ struct Rmm {
 
     void download(std::string filename) {
         read_contents();
-        int32_t dl_idx = -1;
 
-        for (size_t i = 0; i < _files.size(); i++) {
-            if( _files[i].filename == filename ) {
-                dl_idx = (int32_t) i;
-                break;
-            }
-        }
-
+        int32_t dl_idx = _find_matching_file_index(filename);
         if( dl_idx < 0) {
             printf("File not found.\n");
             return;
@@ -90,10 +90,18 @@ struct Rmm {
 
         printf("Downloading file: %s\n", _files[dl_idx].filename.c_str());
 
-        //create dlt
-        //dlt.start()
+        // Create Download Tracker
+        auto cb = [this](uint64_t block_num) { _request_raw_block(block_num); };
+        _dlt = new DownloadTracker(_files[dl_idx], ".", _rxq, cb);
+        _dlt->start();
+
         //wait for dlt to have started
 
+    }
+
+    void _request_raw_block(uint64_t block_num) {
+        printf("block requested: %llu\n", block_num);
+        exit(1);
     }
 
     void read_contents() {
@@ -106,6 +114,19 @@ struct Rmm {
                 stop = true;
             }
         }    
+    }
+
+    int32_t _find_matching_file_index(std::string& filename) {
+        int32_t dl_idx = -1;
+
+        for (size_t i = 0; i < _files.size(); i++) {
+            if( _files[i].filename == filename ) {
+                dl_idx = (int32_t) i;
+                break;
+            }
+        }
+
+        return dl_idx;
     }
 
     void _date_string_template(char* str) {
@@ -371,6 +392,7 @@ struct Rmm {
     std::string _serial_number;
     std::string _model_number;
     std::vector<file_t> _files;
+    DownloadTracker* _dlt;
 };
 
 #endif

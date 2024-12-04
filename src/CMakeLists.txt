@@ -8,6 +8,7 @@ add_executable(
     rx_queue.cpp
     download_tracker.cpp
     print_utils.cpp
+    time_utils.cpp
 )
 
 # Link libraries or other dependencies (if needed)
