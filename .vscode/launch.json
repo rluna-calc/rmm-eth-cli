@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/src/downloader",
               // There I have got error Property keys must be doublequotedjsonc
-            "args": ["--list"]],
+            "args": ["--file", "File001", "--dest", "."],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

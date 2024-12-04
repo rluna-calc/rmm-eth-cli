@@ -24,12 +24,12 @@ constexpr uint32_t PORT_253 = 253;
 constexpr uint32_t PORT_BROADCAST = 255;
 constexpr uint32_t DISCOVER_SIZE = 8548;
 
+constexpr uint32_t REQUEST_LEN = 10; // bytes
+constexpr uint8_t IDENTITY_MSG[REQUEST_LEN] = {0x00,0x05,0x00,0x01,0x00,
+                                               0x00,0x00,0x00,0x00,0x00};
 
-const uint8_t IDENTITY_MSG[] = {0x00,0x05,0x00,0x01,0x00,
-                                0x00,0x00,0x00,0x00,0x00};
-
-const uint8_t REQ_BLOCK_MSG[] = {0x00,0x03,0x00,0x01,0x00,
-                                 0x00,0x00,0x00,0x00,0x00};
+constexpr uint8_t REQ_BLOCK_MSG[REQUEST_LEN] = {0x00,0x03,0x00,0x01,0x00,
+                                                0x00,0x00,0x00,0x00,0x00};
 
 constexpr uint32_t BUFFER_POOL_SIZE = 32;
 
@@ -100,7 +100,16 @@ struct Rmm {
     }
 
     void _request_raw_block(uint64_t block_num) {
-        printf("block requested: %llu\n", block_num);
+        uint8_t buf[REQUEST_LEN];
+        memcpy(buf, REQ_BLOCK_MSG, REQUEST_LEN);
+
+        buf[REQUEST_LEN-1] = (uint8_t) (block_num & 0xFF);
+        buf[REQUEST_LEN-2] = (uint8_t) ((block_num>>8) & 0xFF);
+        buf[REQUEST_LEN-3] = (uint8_t) ((block_num>>16) & 0xFF);
+        buf[REQUEST_LEN-4] = (uint8_t) ((block_num>>24) & 0xFF);
+
+        UDP::send_udp_packet(TX_IP, PORT_252, buf, REQUEST_LEN);
+
         exit(1);
     }
 
@@ -262,13 +271,11 @@ struct Rmm {
     }
 
     uint32_t _request_content_block(int32_t value) {
-        uint8_t buf[sizeof(REQ_BLOCK_MSG)];
-        uint32_t buf_len = sizeof(REQ_BLOCK_MSG);
+        uint8_t buf[REQUEST_LEN];
+        memcpy(buf, REQ_BLOCK_MSG, REQUEST_LEN);
 
-        memcpy(buf, REQ_BLOCK_MSG, buf_len);
-        buf[buf_len-1] = value;
-
-        UDP::send_udp_packet(TX_IP, PORT_252, buf, buf_len);
+        buf[REQUEST_LEN-1] = value;
+        UDP::send_udp_packet(TX_IP, PORT_252, buf, REQUEST_LEN);
 
         const q_elem_t* resp = wait_for_rx();
 
