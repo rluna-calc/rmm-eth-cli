@@ -18,6 +18,7 @@ struct RxQueue {
 
     bool push(q_elem_t* new_elem);
     q_elem_t* get();
+    bool is_empty() { return (_num_elems == 0); }
 
     uint32_t _wrap(uint32_t);
 
