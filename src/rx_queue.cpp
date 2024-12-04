@@ -1,6 +1,7 @@
 #include "rx_queue.h"
 #include <stdio.h>
 #include <string.h>
+#include <time_utils.h>
 
 RxQueue::RxQueue(int size) {
     q_elem_t elem = {0};
@@ -40,6 +41,24 @@ q_elem_t* RxQueue::get() {
     }
 
     return ret;
+}
+
+q_elem_t* RxQueue::get_with_timeout_ms(uint32_t timeout_ms) {
+
+    uint64_t start_time = time_since_eqoch_microsecs();
+    uint64_t end_time = timeout_ms * 1000;
+    
+    uint64_t time_now = 0;
+    q_elem_t* elem = nullptr;
+    while (time_now < end_time) {
+        elem = get();        
+        if(elem) {
+            break;
+        }
+        time_now = time_since_eqoch_microsecs();
+    }
+
+    return elem;
 }
 
 uint32_t RxQueue::_wrap(uint32_t val)

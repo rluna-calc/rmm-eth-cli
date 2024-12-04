@@ -114,8 +114,6 @@ struct Rmm {
         printf("Requesting block %llu\n", block_num);
         print_buf(buf, REQUEST_LEN);
         UDP::send_udp_packet(TX_IP, PORT_252, buf, REQUEST_LEN);
-
-        exit(1);
     }
 
     void read_contents() {
@@ -199,13 +197,12 @@ struct Rmm {
     }
 
     bool tasks_pending() {
-        //TODO
-        // ret = False
-        // if self.dlt is not None:
-        //     ret = not self.dlt.is_stopped()
+        bool ret = false;
+        if( _dlt ) { 
+            ret = !_dlt->get_is_stopped();
+        }
 
-        // return ret
-        return false; // Simulate that no tasks are pending
+        return ret;
     }
 
     void wait_for_ready() {
@@ -218,7 +215,9 @@ struct Rmm {
 
 
     void stop_all() {
-        //TODO: dlt
+        if( _dlt  ) {
+            _dlt->stop();
+        }
 
         for (size_t i = 0; i < _rx.size(); i++) {
             _rx[i]->stop();
@@ -235,17 +234,18 @@ struct Rmm {
     }
 
     void wait_for_threads() {
-            //TODO
-            // if self.dlt is not None:
-            //     self.dlt.thread_dl.join()
-            //     self.dlt.thread_write.join()
+        if( _dlt ) {
+            _dlt->_th_process.join();
+            _dlt->_th_request.join();
+            _dlt->_th_write.join();
+        }
 
-            for (size_t i = 0; i < _rx.size(); i++) {
-                if(_rx[i]->_th.joinable()) {
-                    _rx[i]->_th.join();
-                }
+        for (size_t i = 0; i < _rx.size(); i++) {
+            if(_rx[i]->_th.joinable()) {
+                _rx[i]->_th.join();
             }
         }
+    }
 
     q_elem_t* wait_for_rx() {
         q_elem_t* elem = nullptr;

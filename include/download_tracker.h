@@ -29,6 +29,7 @@ struct DownloadTracker {
 
     void start();
     void stop() { _stop = true; }
+    bool get_is_stopped();
 
     void _reset_segments();
     void _flush_rx_queue();
@@ -38,7 +39,10 @@ struct DownloadTracker {
     void _run_write();
     void _wait_for_file_ready();
     void _wait_for_process_ready();
-    bool _is_stopeed() { return _is_stopped; }
+    bool _process_segment(q_elem_t* elem);
+    void _increment_block();
+    bool _check_segment(bool do_increment);
+    void _do_reporting();
 
     file_t _f;
     RxQueue* _rxq;
@@ -48,7 +52,6 @@ struct DownloadTracker {
     std::thread _th_write;
 
     bool _stop;
-    bool _is_stopped;
     bool _is_file_ready;
     bool _is_process_ready;
     bool _stop_requesting;

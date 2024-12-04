@@ -19,6 +19,7 @@ add_executable(
     downloader_test.cc
     ../src/rx_queue.cpp
     ../src/print_utils.cpp
+    ../src/time_utils.cpp
  )
 
 #  target_include_directories(

@@ -123,5 +123,6 @@ int main(int argc, char** argv) {
     rmm.stop_all();
     rmm.wait_for_threads();
     
+    printf("Exiting\n");
     return 0;
 }

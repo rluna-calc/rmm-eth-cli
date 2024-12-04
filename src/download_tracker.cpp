@@ -5,6 +5,8 @@
 #include "time_utils.h"
 #include "download_tracker.h"
 
+constexpr uint32_t REPORT_COUNT = 1000;
+
 constexpr uint32_t PAYLOAD_START = 10;
 constexpr uint32_t BLOCK_BYTES = 51;
 constexpr uint32_t RX_BLOCKS = 1;
@@ -20,7 +22,6 @@ DownloadTracker::DownloadTracker(file_t f, const char* dest_path, RxQueue* rxq, 
     _rxq(rxq),
     _cb_request_block(cb),
     _stop(false),
-    _is_stopped(true),
     _is_file_ready(false),
     _is_process_ready(false),
     _stop_requesting(false),
@@ -48,27 +49,33 @@ void DownloadTracker::start() {
     _th_request = std::thread(&DownloadTracker::_run_request, this);
 }
 
+bool DownloadTracker::get_is_stopped() {
+    return (!_is_file_ready && !_is_process_ready);
+}
+
 void DownloadTracker::_run_request() {
     printf("Request thread started\n");
 
     _reset_segments();
     _flush_rx_queue();
 
-    while( !_stop && !_stop_requesting) {
+    while( !(_stop || _stop_requesting) ) {
 
         // TODO: maybe use a CV to avoid a spin loop?
         if( _num_active_requests < MAX_NUM_ACTIVE_REQUESTS ) {
             _cb_request_block(_current_block); // move to download thread
             _num_active_requests++;
         }
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
     }
+
+    printf("Request thread finished\n");
 }
 
 void DownloadTracker::_run_process() {
     printf("Process thread started\n");
 
-    _is_stopped = false;
-    bool is_finished = false;
     int32_t num_retries = 0;
     uint64_t bytes_prev = 0;
     int64_t time_prev = 0;
@@ -77,9 +84,82 @@ void DownloadTracker::_run_process() {
     int64_t start_time = time_since_epoch_seconds();
 
     _is_process_ready = true;
-    while( !_stop && !is_finished) {
+    q_elem_t* elem;
+    while( !(_stop || _stop_requesting) ) {
+        for(int i = 0; i < NUM_SEGMENTS; i++) {    
+            elem = _rxq->get_with_timeout_ms(100);
+            if(elem) {
+                ok_block_increment = _process_segment(elem);
+                if (ok_block_increment) {
+                    break;
+                }
+            }
+            else {
+                printf("RX queue empty on segment %d\n", i);
+                break;
+                // exit(1);
+            }
+        }
+
+        _stop_requesting = _check_segment(ok_block_increment); // break; if true
+        
+        if (_block_count % REPORT_COUNT == 0) {
+            _do_reporting();
+        }
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
     }
+
+    _is_process_ready = false;
+    printf("Process thread finished\n");
+}
+
+bool DownloadTracker::_check_segment(bool do_increment) {
+    bool is_finished = false;
+
+    if( do_increment ) {
+        // Check for termination criteria
+        if( _bytes_received >= _f.file_size ) {
+            is_finished = true;
+            _stop_requesting = true;
+        }
+        else { 
+            _increment_block();
+        }
+    }
+
+    return is_finished;
+}
+
+void DownloadTracker::_do_reporting() {
+
+}
+
+void DownloadTracker::_increment_block() {
+    uint64_t increment_value = (1 << 8);
+    _block_count += increment_value;
+    _current_block += increment_value;
+}
+
+bool DownloadTracker::_process_segment(q_elem_t* elem) {
+    uint32_t reported_len = (elem->buf[3] << 8 | elem->buf[2]) * 2;
+    if (elem->len - PAYLOAD_START == reported_len) {
+        _bytes_received += reported_len;
+        _chunk_size += reported_len;
+        // _rx_segs.append(seg)
+    }
+
+    bool ok_to_increment = (_chunk_size == RX_SEQ_LEN);
+
+    if (ok_to_increment) {
+        // push to file_write queue to write to disk
+        // if self.file_write_queue.full():
+        //     LOG.warning("File write queue is full")
+        // else:
+        //     self.file_write_queue.put(self.rx_segs)
+    }
+
+    return ok_to_increment;
 }
 
 void DownloadTracker::_run_write() {
@@ -96,6 +176,9 @@ void DownloadTracker::_run_write() {
     while( !_stop ) {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
+
+    _is_file_ready = false;
+    printf("Write thread finished\n");
 }
 
 void DownloadTracker::_flush_rx_queue() {
