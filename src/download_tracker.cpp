@@ -58,7 +58,7 @@ void DownloadTracker::_run_request() {
 
         // TODO: maybe use a CV to avoid a spin loop?
         if( _num_active_requests < MAX_NUM_ACTIVE_REQUESTS ) {
-            _cb_request_block(_block_count); // move to download thread
+            _cb_request_block(_current_block); // move to download thread
             _num_active_requests++;
         }
     }

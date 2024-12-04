@@ -31,6 +31,9 @@ constexpr uint8_t IDENTITY_MSG[REQUEST_LEN] = {0x00,0x05,0x00,0x01,0x00,
 constexpr uint8_t REQ_BLOCK_MSG[REQUEST_LEN] = {0x00,0x03,0x00,0x01,0x00,
                                                 0x00,0x00,0x00,0x00,0x00};
 
+constexpr uint8_t REQ_RAWBLOCK_MSG[REQUEST_LEN] = {0x00,0x03,0x01,0x00,0x00,
+                                                   0x00,0x00,0x00,0x00,0x00};
+
 constexpr uint32_t BUFFER_POOL_SIZE = 32;
 
 using namespace std;
@@ -101,13 +104,15 @@ struct Rmm {
 
     void _request_raw_block(uint64_t block_num) {
         uint8_t buf[REQUEST_LEN];
-        memcpy(buf, REQ_BLOCK_MSG, REQUEST_LEN);
+        memcpy(buf, REQ_RAWBLOCK_MSG, REQUEST_LEN);
 
         buf[REQUEST_LEN-1] = (uint8_t) (block_num & 0xFF);
         buf[REQUEST_LEN-2] = (uint8_t) ((block_num>>8) & 0xFF);
         buf[REQUEST_LEN-3] = (uint8_t) ((block_num>>16) & 0xFF);
         buf[REQUEST_LEN-4] = (uint8_t) ((block_num>>24) & 0xFF);
 
+        printf("Requesting block %llu\n", block_num);
+        print_buf(buf, REQUEST_LEN);
         UDP::send_udp_packet(TX_IP, PORT_252, buf, REQUEST_LEN);
 
         exit(1);
