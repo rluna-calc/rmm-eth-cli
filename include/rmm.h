@@ -112,7 +112,6 @@ struct Rmm {
         buf[REQUEST_LEN-3] = (uint8_t) ((block_num>>16) & 0xFF);
         buf[REQUEST_LEN-4] = (uint8_t) ((block_num>>24) & 0xFF);
 
-        printf("%llu: %d: Requesting block %llu\n", time_since_epoch_microsecs(), __LINE__, block_num);
         UDP::send_udp_packet(TX_IP, PORT_252, buf, REQUEST_LEN);
     }
 

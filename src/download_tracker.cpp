@@ -65,8 +65,9 @@ void DownloadTracker::_run_request() {
 
         // TODO: maybe use a CV to avoid a spin loop?
         if( _num_active_requests < MAX_NUM_ACTIVE_REQUESTS ) {
-            // printf("%d: current_block request = %llu\n", __LINE__, _current_block);
             _cb_request_block(_current_block);
+            printf("%llu: %d: Requested block %llu\n", time_since_epoch_microsecs(), __LINE__, _current_block);
+
             _num_active_requests++;
         }
         std::this_thread::sleep_for(std::chrono::microseconds(10));
@@ -89,6 +90,8 @@ void DownloadTracker::_run_process() {
     q_elem_t* elem;
     printf("dlt _rxq = %p\n", _rxq);
     uint32_t segment_counter = 0;
+
+    _stop = false;
     while( !(_stop || _stop_requesting) ) {
         _reset_segments();
         segment_counter = 0;
@@ -99,8 +102,8 @@ void DownloadTracker::_run_process() {
             if(elem) {
                 segment_counter++;
                 ok_block_increment = _process_segment(elem);
-                printf("%llu: %d: num_elems = %d, chunk_size = %d, ok_inc = %d\n", time_since_epoch_microsecs(), __LINE__, 
-                    _rxq->_num_elems, _chunk_size, ok_block_increment);
+                // printf("%llu: %d: num_elems = %d, chunk_size = %d, ok_inc = %d\n", time_since_epoch_microsecs(), __LINE__, 
+                //     _rxq->_num_elems, _chunk_size, ok_block_increment);
 
                 if (ok_block_increment) {
                     break;
@@ -115,10 +118,10 @@ void DownloadTracker::_run_process() {
 
         _stop_requesting = _check_segment(ok_block_increment); // break; if true
         
-        // if (_block_count % REPORT_COUNT == 0) {
+        if (_block_count % REPORT_COUNT == 0) {
             // _stop_requesting = _do_reporting(&prev_time, &prev_bytes);
-            // _do_reporting(&prev_time, &prev_bytes);
-        // }
+            _do_reporting(&prev_time, &prev_bytes);
+        }
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 
@@ -145,17 +148,14 @@ bool DownloadTracker::_check_segment(bool do_increment) {
 }
 
 bool DownloadTracker::_do_reporting(int64_t* prev_time, int64_t* prev_bytes) {
-    printf("%d\n", __LINE__);
     int64_t time_now = time_since_epoch_microsecs();
-    printf("%d\n", __LINE__);
 
     int64_t bytes_now = _block_count * BLOCK_BYTES;
     float rate = (float)(bytes_now - *prev_bytes) / (float)(time_now - *prev_time);
-    printf("%d\n", __LINE__);
+    printf("bytes [%llu, %llu], time [%llu, %llu]\n", bytes_now, *prev_bytes, time_now, *prev_time);
 
     bool end_now = true;
     int64_t bytes_remaining = _f.file_size - bytes_now;
-    printf("%d\n", __LINE__);
 
     float time_remaining = -1.0;
     std::string remaining_str = "infinity";
@@ -164,17 +164,14 @@ bool DownloadTracker::_do_reporting(int64_t* prev_time, int64_t* prev_bytes) {
         _get_time_str(time_remaining, remaining_str);
         end_now = false;
     }
-    printf("%d\n", __LINE__);
 
     if (*prev_time > 0) {
         printf("%.1f GB of %.1f GB at ==> ", (float)bytes_now/1.e9, (float)_f.file_size/1.e9);
         printf("%.2f MB/s | %s\n", rate/1.e6, remaining_str.c_str());
     }
-    printf("%d\n", __LINE__);
 
     *prev_time = time_now;
     *prev_bytes = bytes_now;
-    printf("%d\n", __LINE__);
 
     return end_now;
 }
@@ -237,6 +234,7 @@ void DownloadTracker::_run_write() {
     // open file
     _is_file_ready = true;
 
+    _stop = false;
     while( !_stop ) {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
