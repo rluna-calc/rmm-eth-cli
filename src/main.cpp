@@ -12,6 +12,7 @@
 #include "rmm.h"
 #include "rx_queue.h"
 #include "udp_utils.h"
+#include "spdlog/spdlog.h"
 
 std::vector<std::string> file_names;
 std::string download_path;
@@ -81,9 +82,15 @@ int main(int argc, char** argv) {
     // Register signal handler for graceful shutdown
     std::signal(SIGINT, signal_handler);
 
-    // printf("Starting UDP RMM Downloader\n");
+    spdlog::set_level(spdlog::level::debug);
+    // spdlog::set_pattern("[%H:%M:%S %z] [%n] [%^---%L---%$] [thread %t] %v");
+    // spdlog::set_pattern("[%H:%M:%S %z] [%^%L%$] [%&] %v");
+    spdlog::set_pattern("[%H:%M:%S.%e] [%^%l%$] %v");
+
+    spdlog::debug("Starting UDP RMM Downloader");
     parse_arguments(argc, argv);
 
+    
     if (_args.help) {
         print_usage();
         return 0;
@@ -96,10 +103,11 @@ int main(int argc, char** argv) {
     bool rmm_found = rmm.search();
 
     if (rmm_found) {
-        printf("SerialNumber: %s\n", rmm._serial_number.c_str());
-        printf("ModelNumber: %s\n", rmm._model_number.c_str());
+        spdlog::info("SerialNumber: %s", rmm._serial_number.c_str());
+        spdlog::info("ModelNumber: %s", rmm._model_number.c_str());
     } else {
-        printf("ERROR: RMM was not found\n");
+        spdlog::error("ERROR: RMM was not found");
+        exit(1);
     }
 
     if (_args.list) {
@@ -113,7 +121,7 @@ int main(int argc, char** argv) {
         rmm.download(_args.file);
     }
     else {
-        printf("Invalid arguments\n");
+        spdlog::error("Invalid arguments\n");
     }
 
     while( rmm.tasks_pending() ) {
@@ -123,6 +131,6 @@ int main(int argc, char** argv) {
     rmm.stop_all();
     rmm.wait_for_threads();
     
-    printf("Exiting\n");
+    spdlog::info("Exiting\n");
     return 0;
 }
