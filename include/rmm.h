@@ -253,20 +253,9 @@ struct Rmm {
     }
 
     q_elem_t* wait_for_rx() {
-        q_elem_t* elem = nullptr;
-        
-        for (int i = 0; i < 100; i++) {
-            elem = _rxq->get();
-            if (elem) {
-                break;
-            }
-
-            this_thread::sleep_for(chrono::milliseconds(10));
-        }
-
+        q_elem_t* elem = _rxq->get(1000);
         return elem;
     }
-
 
     void _send_jumbo_zeros() {
         uint8_t buf[DISCOVER_SIZE];

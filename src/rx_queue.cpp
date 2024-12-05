@@ -27,41 +27,28 @@ bool RxQueue::push(q_elem_t* new_elem) {
         _num_elems++;
         _head = _wrap(_head+1);
         ret = true;
+        _c.notify_one();
     }
 
     return ret;
 }
 
-q_elem_t* RxQueue::get() {
-    std::lock_guard<std::mutex> lock(_mutex);
+q_elem_t* RxQueue::get(uint32_t timeout) {
+    chrono::milliseconds my_timeout = chrono::milliseconds(timeout);
+    std::unique_lock<std::mutex> lock(_mutex);
 
     q_elem_t* ret = nullptr;
-    if (_num_elems > 0) {
-        ret = &_buf[_tail++];
-        _num_elems--;
-        _tail = _wrap(_tail);
+
+    // Wait until the queue is not empty or timeout occurs
+    if (_c.wait_for(lock, my_timeout, [this] { return !is_empty(); })) {
+        if (_num_elems > 0) {
+            ret = &_buf[_tail++];
+            _num_elems--;
+            _tail = _wrap(_tail);
+        }
     }
 
     return ret;
-}
-
-q_elem_t* RxQueue::get_with_timeout_ms(uint32_t timeout_ms) {
-
-    uint64_t start_time = time_since_epoch_microsecs();
-    uint64_t end_time = timeout_ms * 1000;
-    
-    uint64_t time_now = 0;
-    q_elem_t* elem = nullptr;
-    while (time_now < end_time) {
-        elem = get();        
-        if(elem) {
-            break;
-        }
-        std::this_thread::sleep_for(std::chrono::microseconds(100));
-        time_now = time_since_epoch_microsecs();
-    }
-
-    return elem;
 }
 
 uint32_t RxQueue::_wrap(uint32_t val)

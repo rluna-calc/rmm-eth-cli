@@ -5,6 +5,10 @@
 #include <mutex>
 #include <stdint.h>
 #include <stdbool.h>
+#include <condition_variable>
+#include <chrono>
+
+using namespace std;
 
 constexpr uint32_t RX_BUFFER_SIZE = 9000;
 
@@ -17,8 +21,7 @@ struct RxQueue {
     RxQueue(int size);
 
     bool push(q_elem_t* new_elem);
-    q_elem_t* get();
-    q_elem_t* get_with_timeout_ms(uint32_t timeout_ms);
+    q_elem_t* get(uint32_t timeout);
     bool is_empty() { return (_num_elems == 0); }
 
     uint32_t _wrap(uint32_t);
@@ -30,6 +33,7 @@ struct RxQueue {
     uint32_t _max_elems;
 
     std::mutex _mutex;
+    std::condition_variable _c;
 };
 
 #endif
