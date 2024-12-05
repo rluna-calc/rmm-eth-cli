@@ -57,7 +57,7 @@ void UdpTxRx::_run() {
         throw std::runtime_error("Failed to bind socket.");
     }
 
-    // printf("Listening for UDP packets on port %d ... \n", _port);
+    printf("Listening for UDP packets on port %d ... \n", _port);
 
     sockaddr_in sender_addr;
     socklen_t sender_addr_len = sizeof(sender_addr);

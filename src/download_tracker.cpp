@@ -61,6 +61,8 @@ void DownloadTracker::_run_request() {
     _reset_segments();
     _flush_rx_queue();
 
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
     while( !(_stop || _stop_requesting) ) {
 
         // TODO: maybe use a CV to avoid a spin loop?

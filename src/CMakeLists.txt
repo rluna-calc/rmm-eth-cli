@@ -11,5 +11,15 @@ add_executable(
     time_utils.cpp
 )
 
+
+add_executable(
+    udptester
+    main_udp.cpp
+    udp_utils.cpp
+    rx_queue.cpp
+    print_utils.cpp
+    time_utils.cpp
+)
+
 # Link libraries or other dependencies (if needed)
 # target_link_libraries(downloader some_library)
