@@ -73,7 +73,7 @@ void DownloadTracker::_run_request() {
         // TODO: maybe use a CV to avoid a spin loop?
         if( _num_active_requests < MAX_NUM_ACTIVE_REQUESTS ) {
             _cb_request_block(_current_block);
-            printf("%lu: %d: Requested block %lu\n", time_since_epoch_microsecs(), __LINE__, _current_block);
+            // printf("%lu: %d: Requested block %lu\n", time_since_epoch_microsecs(), __LINE__, _current_block);
 
             _num_active_requests++;
         }
@@ -132,6 +132,7 @@ void DownloadTracker::_run_process() {
 
     _is_process_ready = false;
     printf("Process thread finished, stop_requesting = %d, stop = %d\n", _stop_requesting, _stop);
+    _stop = true;
 }
 
 bool DownloadTracker::_check_segment(bool do_increment) {
@@ -156,8 +157,8 @@ bool DownloadTracker::_do_reporting(int64_t* prev_time, int64_t* prev_bytes) {
     int64_t time_now = time_since_epoch_microsecs();
 
     int64_t bytes_now = _block_count * BLOCK_BYTES;
-    float rate = (float)(bytes_now - *prev_bytes) / (float)(time_now - *prev_time);
-    printf("bytes [%lu, %lu], time [%lu, %lu]\n", bytes_now, *prev_bytes, time_now, *prev_time);
+    float rate = (float)(bytes_now - *prev_bytes) / (float)(time_now - *prev_time) * 1.e6;
+    // printf("bytes, time [%lu, %lu, %lu, %lu], blockcount = %lu\n", bytes_now, *prev_bytes, time_now, *prev_time, _block_count);
 
     bool end_now = true;
     int64_t bytes_remaining = _f.file_size - bytes_now;
