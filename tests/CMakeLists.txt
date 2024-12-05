@@ -20,6 +20,7 @@ add_executable(
     ../src/rx_queue.cpp
     ../src/print_utils.cpp
     ../src/time_utils.cpp
+    ../src/download_tracker.cpp
  )
 
 #  target_include_directories(
