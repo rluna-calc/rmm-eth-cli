@@ -52,6 +52,11 @@ bool DownloadTracker::get_is_stopped() {
     return (!_is_file_ready && !_is_process_ready);
 }
 
+void DownloadTracker::wait_for_ready() {
+    _wait_for_file_ready();
+    _wait_for_process_ready();
+}
+
 void DownloadTracker::_run_request() {
     printf("Request thread started\n");
 

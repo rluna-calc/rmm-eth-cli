@@ -30,6 +30,7 @@ struct DownloadTracker {
     void start();
     void stop() { _stop = true; }
     bool get_is_stopped();
+    void wait_for_ready();
 
     void _reset_segments();
     void _flush_rx_queue();

@@ -98,9 +98,7 @@ struct Rmm {
         auto cb = [this](uint64_t block_num) { _request_raw_block(block_num); };
         _dlt = new DownloadTracker(_files[dl_idx], ".", _rxq, cb);
         _dlt->start();
-
-        //wait for dlt to have started
-
+        _dlt->wait_for_ready();
     }
 
     void _request_raw_block(uint64_t block_num) {
