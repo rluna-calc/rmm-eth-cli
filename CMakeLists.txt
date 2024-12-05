@@ -19,7 +19,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG")
 
 # Add subdirectories (for building executable, libraries, and tests)
 add_subdirectory(src)
-# add_subdirectory(tests)
+add_subdirectory(tests)
 
 # Optionally include packaging or installation rules
 # install(TARGETS downloader DESTINATION bin)

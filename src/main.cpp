@@ -100,6 +100,7 @@ int main(int argc, char** argv) {
         printf("ModelNumber: %s\n", rmm._model_number.c_str());
     } else {
         printf("ERROR: RMM was not found\n");
+        exit(1);
     }
 
     if (_args.list) {

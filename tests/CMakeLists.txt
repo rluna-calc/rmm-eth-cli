@@ -33,7 +33,6 @@ target_link_libraries(
   gtest
   gmock
   gtest_main
-  # GTest::gtest_main
 )
 
 include(GoogleTest)
