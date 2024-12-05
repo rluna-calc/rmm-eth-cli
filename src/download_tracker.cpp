@@ -17,7 +17,7 @@ constexpr uint32_t RX_BYTES = BLOCK_BYTES * RX_BLOCKS;
 constexpr uint32_t NUM_SEGMENTS = 16;
 constexpr uint32_t RX_SEQ_LEN = RX_BYTES * NUM_SEGMENTS; // Bytes
 
-constexpr int32_t MAX_NUM_ACTIVE_REQUESTS = 1;
+constexpr int32_t MAX_NUM_ACTIVE_REQUESTS = 8;
 
 DownloadTracker::DownloadTracker(file_t f, const char* dest_path, RxQueue* rxq, callback_t cb):
     _f(f),
@@ -27,6 +27,7 @@ DownloadTracker::DownloadTracker(file_t f, const char* dest_path, RxQueue* rxq, 
     _is_file_ready(false),
     _is_process_ready(false),
     _stop_requesting(false),
+    _wake_request_thread(false),
     _block_count(0),
     _bytes_written(0),
     _bytes_received(0),
@@ -39,6 +40,11 @@ DownloadTracker::DownloadTracker(file_t f, const char* dest_path, RxQueue* rxq, 
 void DownloadTracker::_reset_segments() {
     _chunk_size = 0;
     //TODO: reset_segments;
+}
+
+void DownloadTracker::stop() { 
+    _stop = true;
+    _wakeup_request_thread(); 
 }
 
 void DownloadTracker::start() {
@@ -66,18 +72,22 @@ void DownloadTracker::_run_request() {
     _reset_segments();
     _flush_rx_queue();
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+    std::mutex mtx;
+    std::unique_lock<std::mutex> lck(mtx);
 
     while( !(_stop || _stop_requesting) ) {
 
-        // TODO: maybe use a CV to avoid a spin loop?
         if( _num_active_requests < MAX_NUM_ACTIVE_REQUESTS ) {
             _cb_request_block(_current_block);
             // printf("%lu: %d: Requested block %lu\n", time_since_epoch_microsecs(), __LINE__, _current_block);
 
             _num_active_requests++;
         }
-        std::this_thread::sleep_for(std::chrono::microseconds(10));
+        else {
+            _c.wait(lck, [this]{ return _wake_request_thread; });
+            _wake_request_thread = false;
+        }
     }
 
     printf("Request thread finished, stop_requesting = %d, stop = %d\n", _stop_requesting, _stop);
@@ -90,11 +100,8 @@ void DownloadTracker::_run_process() {
     int64_t prev_time = 0;
     bool ok_block_increment = false;
 
-    int64_t start_time = time_since_epoch_seconds();
-
     _is_process_ready = true;
     q_elem_t* elem;
-    printf("dlt _rxq = %p\n", _rxq);
     uint32_t segment_counter = 0;
 
     _stop = false;
@@ -147,6 +154,7 @@ bool DownloadTracker::_check_segment(bool do_increment) {
         else { 
             _increment_block();
             _num_active_requests--; //TODO: move to write thread
+            _wakeup_request_thread();
         }
     }
 
@@ -269,4 +277,9 @@ void DownloadTracker::_wait_for_process_ready() {
     while (!_is_process_ready) {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
+}
+
+void DownloadTracker::_wakeup_request_thread() { 
+    _wake_request_thread = true; 
+    _c.notify_one(); 
 }

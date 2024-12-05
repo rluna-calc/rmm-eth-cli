@@ -35,7 +35,7 @@ constexpr uint8_t REQ_BLOCK_MSG[REQUEST_LEN] = {0x00,0x03,0x00,0x01,0x00,
 constexpr uint8_t REQ_RAWBLOCK_MSG[REQUEST_LEN] = {0x00,0x03,0x01,0x00,0x00,
                                                    0x00,0x00,0x00,0x00,0x00};
 
-constexpr uint32_t BUFFER_POOL_SIZE = 32;
+constexpr uint32_t BUFFER_POOL_SIZE = 16 * 9;
 
 using namespace std;
 

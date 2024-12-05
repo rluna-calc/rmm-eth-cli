@@ -9,6 +9,7 @@
 #include <thread>
 #include <rx_queue.h>
 #include <functional>
+#include <condition_variable>
 
 typedef struct {
     std::string filename;
@@ -28,7 +29,7 @@ struct DownloadTracker {
     ~DownloadTracker() {};
 
     void start();
-    void stop() { _stop = true; }
+    void stop();
     bool get_is_stopped();
     void wait_for_ready();
 
@@ -45,6 +46,7 @@ struct DownloadTracker {
     bool _check_segment(bool do_increment);
     bool _do_reporting(int64_t* prev_time, int64_t* prev_bytes);
     void _get_time_str(float time_remaining, std::string& time_str);
+    void _wakeup_request_thread();
 
     file_t _f;
     RxQueue* _rxq;
@@ -52,11 +54,13 @@ struct DownloadTracker {
     std::thread _th_request;
     std::thread _th_process;
     std::thread _th_write;
+    std::condition_variable _c;
 
     bool _stop;
     bool _is_file_ready;
     bool _is_process_ready;
     bool _stop_requesting;
+    bool _wake_request_thread;
     uint64_t _block_count;
     uint64_t _bytes_written;
     uint64_t _bytes_received;
